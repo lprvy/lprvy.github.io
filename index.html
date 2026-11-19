@@ -25,13 +25,16 @@
 <header class="nav">
   <div class="wrap nav-inner">
     <a class="logo" href="#top">ALPER<span>.</span></a>
-    <nav>
+    <nav id="site-nav">
       <a href="#work">Work</a>
       <a href="#numbers">Numbers</a>
       <a href="#journey">Journey</a>
       <a href="#contact">Contact</a>
     </nav>
-    <a class="btn-red small" href="https://github.com/lprvy">GitHub ↗</a>
+    <div class="nav-right">
+      <a class="btn-red small" href="https://github.com/lprvy">GitHub ↗</a>
+      <button class="menu" type="button" aria-label="Open menu" aria-expanded="false" aria-controls="site-nav"><span></span><span></span></button>
+    </div>
   </div>
 </header>
 
@@ -43,7 +46,7 @@
     <canvas class="prism" aria-hidden="true"></canvas>
     <div class="giant" aria-hidden="true">ALPER</div>
     <div class="wrap hero-inner">
-      <div class="hero-text reveal">
+      <div class="hero-text">
         <p class="hello">Hello, I'm</p>
         <h1>ALPER</h1>
         <p class="role">DEVELOPER &amp;<br><span>BUG HUNTER.</span></p>

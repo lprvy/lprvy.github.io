@@ -14,7 +14,7 @@
   if (hero && cv && gv && cv.getContext) {
     var ctx = cv.getContext('2d'), gtx = gv.getContext('2d');
     var W = 0, H = 0, DPR = 1;
-    var C = { x: 0, y: 0 }, side = 0, tri = [];
+    var C = { x: 0, y: 0 }, T = { x: 0, y: 0 }, side = 0, tri = [];
     var src = { x: 0, y: 0 }, target = null, mouse = null;
     var K = 28;                       // number of wavelengths
     var N_RED = 1.43, N_VIOLET = 1.60; // exaggerated dispersion for a wide fan
@@ -22,7 +22,7 @@
 
     var hint = document.createElement('p');
     hint.className = 'hint';
-    hint.textContent = window.matchMedia('(hover: none)').matches ? 'drag to bend the light' : 'move your cursor · bend the light';
+    hint.textContent = window.matchMedia('(hover: none)').matches ? 'tap to move the light' : 'move your cursor · bend the light';
     hero.appendChild(hint);
 
     function layout() {
@@ -41,6 +41,8 @@
         { x: C.x + side / 2, y: C.y + h / 3 },
         { x: C.x - side / 2, y: C.y + h / 3 }
       ];
+      // the beam aims at a point on the left face, a little below its middle
+      T = { x: tri[2].x + (tri[0].x - tri[2].x) * 0.42, y: tri[2].y + (tri[0].y - tri[2].y) * 0.42 };
       hint.style.left = C.x + 'px';
       hint.style.top = (C.y + h / 3 + 26) + 'px';
       if (!src.x && !src.y) { var s = idleSource(0); src.x = s.x; src.y = s.y; }
@@ -49,7 +51,7 @@
     function idleSource(t) {
       var a = Math.PI - (W < 900 ? 0.32 : 0.22) + Math.sin(t / 2600) * 0.14;
       var R = Math.max(W, H);
-      return { x: C.x + Math.cos(a) * R, y: C.y + Math.sin(a) * R };
+      return { x: T.x + Math.cos(a) * R, y: T.y + Math.sin(a) * R };
     }
 
     // ---- 2D ray maths ----
@@ -87,7 +89,7 @@
     function reflect(d, n) { var k = 2 * dot(d, n); return { x: d.x - k * n.x, y: d.y - k * n.y }; }
 
     function trace(s) {
-      var d = norm(sub(C, s));
+      var d = norm(sub(T, s));
       var h0 = hit(s, d, -1);
       if (!h0) return null;
       var n0 = edgeNormal(h0.i);
@@ -103,7 +105,7 @@
           inside.push(h.p);
           var ne = edgeNormal(h.i);
           var o = refract(dir, { x: -ne.x, y: -ne.y }, n);
-          if (o) out = { p: h.p, d: o };
+          if (o) out = { p: h.p, d: o, e: h.i };
           else { dir = norm(reflect(dir, { x: -ne.x, y: -ne.y })); p = h.p; skip = h.i; }
         }
         if (!out) continue;
@@ -151,6 +153,9 @@
         gtx.globalCompositeOperation = 'lighter';
         for (var i = 0; i < tr.rays.length - 1; i++) {
           var a = tr.rays[i].out, b = tr.rays[i + 1].out;
+          // neighbours leaving through different faces (or after internal
+          // reflection) are not one band: joining them paints a huge wedge
+          if (a.e !== b.e || dot(a.d, b.d) < 0.996) continue;
           var col = hue((tr.rays[i].f + tr.rays[i + 1].f) / 2);
           var quad = [a.p, { x: a.p.x + a.d.x * L, y: a.p.y + a.d.y * L }, { x: b.p.x + b.d.x * L, y: b.p.y + b.d.y * L }, b.p];
           [[gtx, 0.55], [ctx, 0.2]].forEach(function (pair) {
@@ -184,27 +189,50 @@
       ctx.beginPath(); ctx.moveTo(tri[2].x, tri[2].y); ctx.lineTo(tri[0].x, tri[0].y); ctx.lineTo(tri[1].x, tri[1].y); ctx.stroke();
     }
 
+    // keep the light coming from the left: from the right or from below, the
+    // rainbow would be thrown back across the headline and the text
+    function fromLeft(p) {
+      var v = sub(p, T), r = Math.max(Math.hypot(v.x, v.y), side * 0.6);
+      var a = Math.atan2(v.y, v.x); if (a < 0) a += Math.PI * 2;
+      // from below-left up to just under level: the beam then meets the
+      // left face near the angle of least deviation and leaves as a full rainbow
+      var lo = Math.PI - 0.5, hi = Math.PI - 0.1;
+      if (a < lo || a > hi) { // snap to the nearer edge of the allowed range (around the circle)
+        var dLo = Math.min(Math.abs(a - lo), Math.PI * 2 - Math.abs(a - lo));
+        var dHi = Math.min(Math.abs(a - hi), Math.PI * 2 - Math.abs(a - hi));
+        a = dLo < dHi ? lo : hi;
+      }
+      return { x: T.x + Math.cos(a) * r, y: T.y + Math.sin(a) * r };
+    }
+
     function nearPrism(p) {
       for (var i = 0; i < 3; i++) if (dot(sub(p, tri[i]), edgeNormal(i)) > side * 0.12) return false;
       return true;
     }
 
+    var lastDraw = 0;
     function step(now) {
-      var goal = mouse && !nearPrism(mouse) ? mouse : idleSource(now - t0);
+      if (running) requestAnimationFrame(step);
+      if (now - lastDraw < 15) return; // ~60 fps is plenty, also on 120/240 Hz screens
+      lastDraw = now;
+      var goal = mouse && !nearPrism(mouse) ? fromLeft(mouse) : idleSource(now - t0);
       var k = mouse ? 0.16 : 0.05;
       src.x += (goal.x - src.x) * k; src.y += (goal.y - src.y) * k;
       draw(now);
-      if (running) requestAnimationFrame(step);
     }
     function start() { if (!running && !reduced) { running = true; requestAnimationFrame(step); } }
     function stop() { running = false; }
 
-    hero.addEventListener('pointermove', function (e) {
+    function aim(e) {
       var r = hero.getBoundingClientRect();
       mouse = { x: e.clientX - r.left, y: e.clientY - r.top };
-      if (reduced) { src.x = mouse.x; src.y = mouse.y; if (!nearPrism(mouse)) draw(performance.now()); }
-    });
-    hero.addEventListener('pointerleave', function () { mouse = null; });
+      if (reduced && !nearPrism(mouse)) { var g = fromLeft(mouse); src.x = g.x; src.y = g.y; draw(performance.now()); }
+    }
+    // mouse: the beam follows the cursor. touch: a tap moves the light source
+    // (dragging would scroll the page, so it is not used)
+    hero.addEventListener('pointermove', function (e) { if (e.pointerType === 'mouse') aim(e); });
+    hero.addEventListener('pointerdown', function (e) { if (e.pointerType !== 'mouse') aim(e); });
+    hero.addEventListener('pointerleave', function (e) { if (e.pointerType === 'mouse') mouse = null; });
 
     var rt;
     window.addEventListener('resize', function () { clearTimeout(rt); rt = setTimeout(function () { layout(); draw(performance.now()); }, 120); });
@@ -214,11 +242,20 @@
     } else start();
   }
 
+  /* ================= MOBILE MENU ================= */
+  var menuBtn = document.querySelector('.menu'), siteNav = document.getElementById('site-nav');
+  if (menuBtn && siteNav) {
+    var setMenu = function (open) { siteNav.classList.toggle('open', open); menuBtn.setAttribute('aria-expanded', String(open)); menuBtn.setAttribute('aria-label', open ? 'Close menu' : 'Open menu'); };
+    menuBtn.addEventListener('click', function () { setMenu(!siteNav.classList.contains('open')); });
+    siteNav.addEventListener('click', function (e) { if (e.target.closest('a')) setMenu(false); });
+    document.addEventListener('keydown', function (e) { if (e.key === 'Escape') setMenu(false); });
+  }
+
   /* ================= FLOATING CURSORS ================= */
   var box = document.querySelector('.cursors');
   if (box && !reduced) {
     var svg = '<svg viewBox="0 0 24 24"><path d="M4 2l16 9-7 2-3 8z" fill="#e5202e" stroke="#ff6b75" stroke-width="1"/></svg>';
-    for (var i = 0; i < 14; i++) {
+    for (var i = 0; i < 9; i++) {
       var w = document.createElement('div');
       w.innerHTML = svg;
       var s = w.firstChild;
