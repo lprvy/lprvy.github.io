@@ -16,9 +16,11 @@
     var W = 0, H = 0, DPR = 1;
     var C = { x: 0, y: 0 }, T = { x: 0, y: 0 }, side = 0, tri = [];
     var src = { x: 0, y: 0 }, target = null, mouse = null;
-    var K = 28;                       // number of wavelengths
+    var K = 44;                       // number of wavelengths
     var N_RED = 1.43, N_VIOLET = 1.60; // exaggerated dispersion for a wide fan
     var running = false, t0 = performance.now();
+    var rot = 0;                       // gentle tilt of the prism, radians
+    var motes = [], sparks = [];       // dust in the white beam, glitter in the rainbow
 
     var hint = document.createElement('p');
     hint.className = 'hint';
@@ -35,17 +37,24 @@
       if (mobile) { C = { x: W * 0.42, y: H * 0.73 }; side = Math.min(W * 0.46, 240); }
       else { C = { x: W * 0.72, y: H * 0.5 }; side = Math.min(H * 0.4, W * 0.24, 360); }
       var h = side * Math.sqrt(3) / 2;
-      // equilateral triangle, apex up, centred on its centroid
-      tri = [
-        { x: C.x, y: C.y - h * 2 / 3 },
-        { x: C.x + side / 2, y: C.y + h / 3 },
-        { x: C.x - side / 2, y: C.y + h / 3 }
-      ];
+      shape();
+      hint.style.left = C.x + 'px';
+      hint.style.top = (C.y + h / 3 + 30) + 'px';
+      if (!motes.length) {
+        for (var i = 0; i < 34; i++) motes.push({ u: Math.random(), off: (Math.random() - 0.5) * 16, sp: 0.0012 + Math.random() * 0.0025, ph: Math.random() * 6.28, r: 0.5 + Math.random() * 1.2 });
+        for (var j = 0; j < 26; j++) sparks.push({ k: Math.random(), u: Math.random(), sp: 0.002 + Math.random() * 0.004, ph: Math.random() * 6.28, r: 0.6 + Math.random() * 1.1 });
+      }
+      if (!src.x && !src.y) { var s = idleSource(0); src.x = s.x; src.y = s.y; }
+    }
+
+    // equilateral triangle, apex up, turned by `rot` around its centroid
+    function shape() {
+      var R = side / Math.sqrt(3);
+      tri = [-Math.PI / 2, Math.PI / 6, Math.PI * 5 / 6].map(function (a) {
+        return { x: C.x + Math.cos(a + rot) * R, y: C.y + Math.sin(a + rot) * R };
+      });
       // the beam aims at a point on the left face, a little below its middle
       T = { x: tri[2].x + (tri[0].x - tri[2].x) * 0.42, y: tri[2].y + (tri[0].y - tri[2].y) * 0.42 };
-      hint.style.left = C.x + 'px';
-      hint.style.top = (C.y + h / 3 + 26) + 'px';
-      if (!src.x && !src.y) { var s = idleSource(0); src.x = s.x; src.y = s.y; }
     }
 
     function idleSource(t) {
@@ -116,6 +125,15 @@
 
     function hue(f) { return Math.round(f * 275); } // red -> violet
 
+    function roundTri(c, pts, r) { // triangle path with softly rounded corners
+      var n = pts.length, m0 = { x: (pts[n - 1].x + pts[0].x) / 2, y: (pts[n - 1].y + pts[0].y) / 2 };
+      c.beginPath(); c.moveTo(m0.x, m0.y);
+      for (var i = 0; i < n; i++) c.arcTo(pts[i].x, pts[i].y, pts[(i + 1) % n].x, pts[(i + 1) % n].y, r);
+      c.closePath();
+    }
+    function inset(f) { return tri.map(function (p) { return { x: C.x + (p.x - C.x) * f, y: C.y + (p.y - C.y) * f }; }); }
+    function rgba(a) { return 'rgba(255,255,255,' + Math.max(0, a).toFixed(3) + ')'; }
+
     function draw(now) {
       ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
       gtx.setTransform(DPR * 0.5, 0, 0, DPR * 0.5, 0, 0);
@@ -123,70 +141,137 @@
 
       var tr = trace(src);
       var L = Math.hypot(W, H) * 1.5;
-      var flick = 0.92 + Math.sin(now / 180) * 0.03 + Math.sin(now / 47) * 0.02;
+      var flick = 0.93 + Math.sin(now / 180) * 0.03 + Math.sin(now / 47) * 0.015;
+      var corner = side * 0.035;
+      var top = tri[0], baseY = Math.max(tri[1].y, tri[2].y);
 
-      // ambient glow around the prism
-      var amb = ctx.createRadialGradient(C.x, C.y, 0, C.x, C.y, side * 1.4);
-      amb.addColorStop(0, 'rgba(255,255,255,0.06)'); amb.addColorStop(1, 'rgba(255,255,255,0)');
+      // soft halo around the glass and a faint glow on the "floor" under it
+      var amb = ctx.createRadialGradient(C.x, C.y, 0, C.x, C.y, side * 1.5);
+      amb.addColorStop(0, rgba(0.07)); amb.addColorStop(1, rgba(0));
       ctx.fillStyle = amb; ctx.fillRect(0, 0, W, H);
+      ctx.save(); ctx.translate(C.x, baseY + side * 0.06); ctx.scale(1, 0.16);
+      var fl0 = ctx.createRadialGradient(0, 0, 0, 0, 0, side * 0.75);
+      fl0.addColorStop(0, rgba(0.13)); fl0.addColorStop(1, rgba(0));
+      ctx.fillStyle = fl0; ctx.beginPath(); ctx.arc(0, 0, side * 0.75, 0, Math.PI * 2); ctx.fill(); ctx.restore();
 
       if (tr) {
-        // incoming white beam
-        [gtx, ctx].forEach(function (c, j) {
-          var g = c.createLinearGradient(src.x, src.y, tr.entry.x, tr.entry.y);
-          g.addColorStop(0, 'rgba(255,255,255,' + (j ? 0.15 : 0.1) + ')');
-          g.addColorStop(1, 'rgba(255,255,255,' + (j ? 0.95 : 0.9) * flick + ')');
-          c.strokeStyle = g; c.lineWidth = j ? 2.2 : 14; c.lineCap = 'round';
-          c.beginPath(); c.moveTo(src.x, src.y); c.lineTo(tr.entry.x, tr.entry.y); c.stroke();
+        var ex = tr.entry, bx = ex.x - src.x, by = ex.y - src.y, blen = Math.hypot(bx, by) || 1;
+        var px = -by / blen, py = bx / blen;
+
+        // incoming white beam: wide haze on the glow layer, soft body, bright core
+        [[gtx, 22, 0.05, 0.75], [ctx, 6, 0.0, 0.12], [ctx, 1.8, 0.12, 0.95]].forEach(function (o) {
+          var g = o[0].createLinearGradient(src.x, src.y, ex.x, ex.y);
+          g.addColorStop(0, rgba(o[2])); g.addColorStop(1, rgba(o[3] * flick));
+          o[0].strokeStyle = g; o[0].lineWidth = o[1]; o[0].lineCap = 'round';
+          o[0].beginPath(); o[0].moveTo(src.x, src.y); o[0].lineTo(ex.x, ex.y); o[0].stroke();
         });
 
-        // light travelling inside the glass
+        // dust drifting through the beam, brighter close to the prism
         ctx.globalCompositeOperation = 'lighter';
-        tr.rays.forEach(function (r) {
-          ctx.strokeStyle = 'hsla(' + hue(r.f) + ',100%,70%,0.07)'; ctx.lineWidth = 2;
-          ctx.beginPath(); ctx.moveTo(r.inside[0].x, r.inside[0].y);
-          for (var i = 1; i < r.inside.length; i++) ctx.lineTo(r.inside[i].x, r.inside[i].y);
-          ctx.stroke();
+        motes.forEach(function (m) {
+          if (running) { m.u += m.sp; if (m.u > 1) { m.u -= 1; m.off = (Math.random() - 0.5) * 16; } }
+          var tw = 0.5 + 0.5 * Math.sin(now / 260 + m.ph);
+          var a = m.u * m.u * tw * 0.75;
+          if (a < 0.02) return;
+          var x = src.x + bx * m.u + px * m.off * (0.3 + m.u), y = src.y + by * m.u + py * m.off * (0.3 + m.u);
+          ctx.fillStyle = rgba(a); ctx.beginPath(); ctx.arc(x, y, m.r, 0, Math.PI * 2); ctx.fill();
         });
+
+        // inside the glass: the white light fans out into colours
+        var straight = tr.rays.filter(function (r) { return r.inside.length === 2; });
+        for (var i = 0; i < straight.length - 1; i++) {
+          var r0 = straight[i], r1 = straight[i + 1];
+          var gi = ctx.createLinearGradient(ex.x, ex.y, r0.out.p.x, r0.out.p.y);
+          gi.addColorStop(0, 'rgba(255,255,255,0.22)');
+          gi.addColorStop(1, 'hsla(' + hue(r0.f) + ',100%,65%,0.32)');
+          ctx.fillStyle = gi; ctx.beginPath(); ctx.moveTo(ex.x, ex.y); ctx.lineTo(r0.out.p.x, r0.out.p.y); ctx.lineTo(r1.out.p.x, r1.out.p.y); ctx.closePath(); ctx.fill();
+        }
 
         // outgoing rainbow fan: a quad between neighbouring wavelengths
         gtx.globalCompositeOperation = 'lighter';
-        for (var i = 0; i < tr.rays.length - 1; i++) {
-          var a = tr.rays[i].out, b = tr.rays[i + 1].out;
+        var exitSum = { x: 0, y: 0, n: 0 };
+        for (var q = 0; q < tr.rays.length - 1; q++) {
+          var a = tr.rays[q].out, b = tr.rays[q + 1].out;
           // neighbours leaving through different faces (or after internal
           // reflection) are not one band: joining them paints a huge wedge
           if (a.e !== b.e || dot(a.d, b.d) < 0.996) continue;
-          var col = hue((tr.rays[i].f + tr.rays[i + 1].f) / 2);
+          exitSum.x += a.p.x; exitSum.y += a.p.y; exitSum.n++;
+          var col = hue((tr.rays[q].f + tr.rays[q + 1].f) / 2);
           var quad = [a.p, { x: a.p.x + a.d.x * L, y: a.p.y + a.d.y * L }, { x: b.p.x + b.d.x * L, y: b.p.y + b.d.y * L }, b.p];
-          [[gtx, 0.55], [ctx, 0.2]].forEach(function (pair) {
+          [[gtx, 0.5, 64], [ctx, 0.2, 62]].forEach(function (pair) {
             var c = pair[0], g = c.createLinearGradient(a.p.x, a.p.y, a.p.x + a.d.x * L * 0.6, a.p.y + a.d.y * L * 0.6);
-            g.addColorStop(0, 'hsla(' + col + ',100%,62%,' + pair[1] * flick + ')');
+            g.addColorStop(0, 'hsla(' + col + ',100%,' + pair[2] + '%,' + (pair[1] * flick).toFixed(3) + ')');
+            g.addColorStop(0.35, 'hsla(' + col + ',100%,58%,' + (pair[1] * 0.7 * flick).toFixed(3) + ')');
             g.addColorStop(1, 'hsla(' + col + ',100%,55%,0)');
             c.fillStyle = g; c.beginPath(); c.moveTo(quad[0].x, quad[0].y);
-            for (var q = 1; q < 4; q++) c.lineTo(quad[q].x, quad[q].y);
+            for (var z = 1; z < 4; z++) c.lineTo(quad[z].x, quad[z].y);
             c.closePath(); c.fill();
           });
         }
+
+        // glitter carried along the rainbow
+        if (tr.rays.length > 1) sparks.forEach(function (s) {
+          if (running) { s.u += s.sp; if (s.u > 1) { s.u -= 1; s.k = Math.random(); } }
+          var r = tr.rays[Math.min(tr.rays.length - 1, Math.floor(s.k * tr.rays.length))];
+          var d = s.u * side * 3.2, tw = 0.5 + 0.5 * Math.sin(now / 200 + s.ph);
+          var a = (1 - s.u) * tw * 0.8;
+          if (a < 0.03) return;
+          ctx.fillStyle = 'hsla(' + hue(r.f) + ',100%,78%,' + a.toFixed(3) + ')';
+          ctx.beginPath(); ctx.arc(r.out.p.x + r.out.d.x * d, r.out.p.y + r.out.d.y * d, s.r, 0, Math.PI * 2); ctx.fill();
+        });
+
+        // where the light leaves: a glow on the glass edge
+        if (exitSum.n) {
+          var eX = exitSum.x / exitSum.n, eY = exitSum.y / exitSum.n;
+          var eg = gtx.createRadialGradient(eX, eY, 0, eX, eY, side * 0.16);
+          eg.addColorStop(0, 'rgba(255,240,255,' + (0.45 * flick).toFixed(3) + ')'); eg.addColorStop(1, 'rgba(255,255,255,0)');
+          gtx.fillStyle = eg; gtx.beginPath(); gtx.arc(eX, eY, side * 0.16, 0, Math.PI * 2); gtx.fill();
+        }
         gtx.globalCompositeOperation = 'source-over';
         ctx.globalCompositeOperation = 'source-over';
-
-        // flare where the beam enters
-        var fl = ctx.createRadialGradient(tr.entry.x, tr.entry.y, 0, tr.entry.x, tr.entry.y, 34);
-        fl.addColorStop(0, 'rgba(255,255,255,' + 0.85 * flick + ')'); fl.addColorStop(1, 'rgba(255,255,255,0)');
-        ctx.fillStyle = fl; ctx.beginPath(); ctx.arc(tr.entry.x, tr.entry.y, 34, 0, Math.PI * 2); ctx.fill();
       }
 
-      // the glass prism
-      var pg = ctx.createLinearGradient(tri[2].x, tri[0].y, tri[1].x, tri[1].y);
-      pg.addColorStop(0, 'rgba(255,255,255,0.10)'); pg.addColorStop(0.5, 'rgba(255,255,255,0.03)'); pg.addColorStop(1, 'rgba(255,255,255,0.08)');
-      ctx.fillStyle = pg; ctx.strokeStyle = 'rgba(255,255,255,0.6)'; ctx.lineWidth = 1.4; ctx.lineJoin = 'round';
-      ctx.beginPath(); ctx.moveTo(tri[0].x, tri[0].y); ctx.lineTo(tri[1].x, tri[1].y); ctx.lineTo(tri[2].x, tri[2].y); ctx.closePath();
-      ctx.fill(); ctx.stroke();
-      // edge highlight on the apex
-      var hl = ctx.createRadialGradient(tri[0].x, tri[0].y, 0, tri[0].x, tri[0].y, side * 0.5);
-      hl.addColorStop(0, 'rgba(255,255,255,0.35)'); hl.addColorStop(1, 'rgba(255,255,255,0)');
-      ctx.strokeStyle = hl; ctx.lineWidth = 2.5;
-      ctx.beginPath(); ctx.moveTo(tri[2].x, tri[2].y); ctx.lineTo(tri[0].x, tri[0].y); ctx.lineTo(tri[1].x, tri[1].y); ctx.stroke();
+      // ---- the glass ----
+      // body: cool top-to-bottom tint
+      var body = ctx.createLinearGradient(top.x, top.y, C.x, baseY);
+      body.addColorStop(0, 'rgba(255,255,255,0.13)'); body.addColorStop(0.55, 'rgba(255,255,255,0.035)'); body.addColorStop(1, 'rgba(200,210,255,0.07)');
+      roundTri(ctx, tri, corner); ctx.fillStyle = body; ctx.fill();
+      // outer edge
+      ctx.strokeStyle = 'rgba(255,255,255,0.62)'; ctx.lineWidth = 1.5; ctx.lineJoin = 'round'; ctx.stroke();
+      // inner bevel: a second, fainter outline gives the glass some thickness
+      roundTri(ctx, inset(0.9), corner * 0.8); ctx.strokeStyle = 'rgba(255,255,255,0.13)'; ctx.lineWidth = 1; ctx.stroke();
+      // bright rim along the two upper faces, strongest at the apex
+      var hl = ctx.createRadialGradient(top.x, top.y, 0, top.x, top.y, side * 0.62);
+      hl.addColorStop(0, 'rgba(255,255,255,0.75)'); hl.addColorStop(1, 'rgba(255,255,255,0)');
+      ctx.strokeStyle = hl; ctx.lineWidth = 2.6; ctx.lineCap = 'round';
+      ctx.beginPath(); ctx.moveTo(tri[2].x, tri[2].y); ctx.lineTo(top.x, top.y); ctx.lineTo(tri[1].x, tri[1].y); ctx.stroke();
+      // a reflection streak just inside the left face
+      var i1 = inset(0.78);
+      var sA = { x: i1[2].x + (i1[0].x - i1[2].x) * 0.55, y: i1[2].y + (i1[0].y - i1[2].y) * 0.55 };
+      var sB = { x: i1[2].x + (i1[0].x - i1[2].x) * 0.9, y: i1[2].y + (i1[0].y - i1[2].y) * 0.9 };
+      var sg = ctx.createLinearGradient(sA.x, sA.y, sB.x, sB.y);
+      sg.addColorStop(0, rgba(0)); sg.addColorStop(0.5, rgba(0.35)); sg.addColorStop(1, rgba(0));
+      ctx.strokeStyle = sg; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.moveTo(sA.x, sA.y); ctx.lineTo(sB.x, sB.y); ctx.stroke();
+      // apex glint
+      var gy = top.y + corner * 1.5;
+      var gl = ctx.createRadialGradient(top.x, gy, 0, top.x, gy, side * 0.09);
+      gl.addColorStop(0, rgba(0.55 * flick)); gl.addColorStop(1, rgba(0));
+      ctx.fillStyle = gl; ctx.beginPath(); ctx.arc(top.x, gy, side * 0.09, 0, Math.PI * 2); ctx.fill();
+
+      // where the light enters: a bright flare with a thin streak along the face
+      if (tr) {
+        var e = tr.entry;
+        var fl = ctx.createRadialGradient(e.x, e.y, 0, e.x, e.y, 40);
+        fl.addColorStop(0, rgba(0.95 * flick)); fl.addColorStop(0.25, rgba(0.35 * flick)); fl.addColorStop(1, rgba(0));
+        ctx.fillStyle = fl; ctx.beginPath(); ctx.arc(e.x, e.y, 40, 0, Math.PI * 2); ctx.fill();
+        var fdx = tri[0].x - tri[2].x, fdy = tri[0].y - tri[2].y, fl2 = Math.hypot(fdx, fdy) || 1;
+        fdx /= fl2; fdy /= fl2;
+        var st = ctx.createLinearGradient(e.x - fdx * 34, e.y - fdy * 34, e.x + fdx * 34, e.y + fdy * 34);
+        st.addColorStop(0, rgba(0)); st.addColorStop(0.5, rgba(0.7 * flick)); st.addColorStop(1, rgba(0));
+        ctx.strokeStyle = st; ctx.lineWidth = 1.2;
+        ctx.beginPath(); ctx.moveTo(e.x - fdx * 34, e.y - fdy * 34); ctx.lineTo(e.x + fdx * 34, e.y + fdy * 34); ctx.stroke();
+      }
     }
 
     // keep the light coming from the left: from the right or from below, the
@@ -218,6 +303,10 @@
       var goal = mouse && !nearPrism(mouse) ? fromLeft(mouse) : idleSource(now - t0);
       var k = mouse ? 0.16 : 0.05;
       src.x += (goal.x - src.x) * k; src.y += (goal.y - src.y) * k;
+      // the prism breathes a little and leans slightly towards the cursor
+      var tilt = Math.sin((now - t0) / 4200) * 0.03 + (mouse ? Math.max(-1, Math.min(1, (mouse.y - C.y) / (H * 0.5))) * 0.04 : 0);
+      rot += (tilt - rot) * 0.05;
+      shape();
       draw(now);
     }
     function start() { if (!running && !reduced) { running = true; requestAnimationFrame(step); } }
