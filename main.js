@@ -20,6 +20,7 @@
     var N_RED = 1.43, N_VIOLET = 1.60; // exaggerated dispersion for a wide fan
     var running = false, t0 = performance.now();
     var rot = 0;                       // gentle tilt of the prism, radians
+    var heroTop = 0;                   // hero's top edge in the viewport, for the ASCII light
     var motes = [], sparks = [];       // dust in the white beam, glitter in the rainbow
 
     var hint = document.createElement('p');
@@ -141,6 +142,7 @@
 
       var tr = trace(src);
       var L = Math.hypot(W, H) * 1.5;
+      var light = []; // shared with the ASCII background (ascii.js)
       var flick = 0.93 + Math.sin(now / 180) * 0.03 + Math.sin(now / 47) * 0.015;
       var corner = side * 0.035;
       var top = tri[0], baseY = Math.max(tri[1].y, tri[2].y);
@@ -157,6 +159,7 @@
       if (tr) {
         var ex = tr.entry, bx = ex.x - src.x, by = ex.y - src.y, blen = Math.hypot(bx, by) || 1;
         var px = -by / blen, py = bx / blen;
+        light.push({ h: 12, pts: [{ x: src.x + px * 8, y: src.y + py * 8 }, { x: ex.x + px * 8, y: ex.y + py * 8 }, { x: ex.x - px * 8, y: ex.y - py * 8 }, { x: src.x - px * 8, y: src.y - py * 8 }], g0: ex, g1: src });
 
         // incoming white beam: wide haze on the glow layer, soft body, bright core
         [[gtx, 22, 0.05, 0.75], [ctx, 6, 0.0, 0.12], [ctx, 1.8, 0.12, 0.95]].forEach(function (o) {
@@ -189,7 +192,7 @@
 
         // outgoing rainbow fan: a quad between neighbouring wavelengths
         gtx.globalCompositeOperation = 'lighter';
-        var exitSum = { x: 0, y: 0, n: 0 };
+        var exitSum = { x: 0, y: 0, n: 0 }, bands = [], band = null;
         for (var q = 0; q < tr.rays.length - 1; q++) {
           var a = tr.rays[q].out, b = tr.rays[q + 1].out;
           // neighbours leaving through different faces (or after internal
@@ -197,8 +200,13 @@
           if (a.e !== b.e || dot(a.d, b.d) < 0.996) continue;
           exitSum.x += a.p.x; exitSum.y += a.p.y; exitSum.n++;
           var col = hue((tr.rays[q].f + tr.rays[q + 1].f) / 2);
+          // for the ASCII light, neighbouring slivers of one hue are merged into
+          // a band: single slivers are thinner than a character cell and vanish
+          var hb = Math.round(((tr.rays[q].f + tr.rays[q + 1].f) / 2) * 11);
+          if (band && band.h === hb && band.last === q - 1) { band.b = b; band.last = q; }
+          else { band = { h: hb, a: a, b: b, last: q }; bands.push(band); }
           var quad = [a.p, { x: a.p.x + a.d.x * L, y: a.p.y + a.d.y * L }, { x: b.p.x + b.d.x * L, y: b.p.y + b.d.y * L }, b.p];
-          [[gtx, 0.5, 64], [ctx, 0.2, 62]].forEach(function (pair) {
+          [[gtx, 0.4, 64], [ctx, 0.13, 62]].forEach(function (pair) {
             var c = pair[0], g = c.createLinearGradient(a.p.x, a.p.y, a.p.x + a.d.x * L * 0.6, a.p.y + a.d.y * L * 0.6);
             g.addColorStop(0, 'hsla(' + col + ',100%,' + pair[2] + '%,' + (pair[1] * flick).toFixed(3) + ')');
             g.addColorStop(0.35, 'hsla(' + col + ',100%,58%,' + (pair[1] * 0.7 * flick).toFixed(3) + ')');
@@ -208,6 +216,10 @@
             c.closePath(); c.fill();
           });
         }
+
+        bands.forEach(function (o) {
+          light.push({ h: o.h, pts: [o.a.p, { x: o.a.p.x + o.a.d.x * L, y: o.a.p.y + o.a.d.y * L }, { x: o.b.p.x + o.b.d.x * L, y: o.b.p.y + o.b.d.y * L }, o.b.p], g0: o.a.p, g1: { x: o.a.p.x + o.a.d.x * L * 0.55, y: o.a.p.y + o.a.d.y * L * 0.55 } });
+        });
 
         // glitter carried along the rainbow
         if (tr.rays.length > 1) sparks.forEach(function (s) {
@@ -230,6 +242,8 @@
         gtx.globalCompositeOperation = 'source-over';
         ctx.globalCompositeOperation = 'source-over';
       }
+
+      window.__prismLight = { top: heroTop, polys: light };
 
       // ---- the glass ----
       // body: cool top-to-bottom tint
@@ -300,6 +314,7 @@
       if (running) requestAnimationFrame(step);
       if (now - lastDraw < 15) return; // ~60 fps is plenty, also on 120/240 Hz screens
       lastDraw = now;
+      heroTop = hero.getBoundingClientRect().top;
       var goal = mouse && !nearPrism(mouse) ? fromLeft(mouse) : idleSource(now - t0);
       var k = mouse ? 0.16 : 0.05;
       src.x += (goal.x - src.x) * k; src.y += (goal.y - src.y) * k;
@@ -310,7 +325,7 @@
       draw(now);
     }
     function start() { if (!running && !reduced) { running = true; requestAnimationFrame(step); } }
-    function stop() { running = false; }
+    function stop() { running = false; window.__prismLight = null; }
 
     function aim(e) {
       var r = hero.getBoundingClientRect();
