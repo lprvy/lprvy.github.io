@@ -19,14 +19,47 @@
     var K = 44;                       // number of wavelengths
     var N_RED = 1.43, N_VIOLET = 1.60; // exaggerated dispersion for a wide fan
     var running = false, t0 = performance.now();
-    var rot = 0;                       // gentle tilt of the prism, radians
+    var rot = 0;                       // gentle tilt of the prism, radians (breathing)
+    var C0 = { x: 0, y: 0 };           // default centre from the layout
+    var off = { x: 0, y: 0 }, userRot = 0, resetting = false; // what the visitor did to the prism
+    var pinned = null, drag = null, aimPt = null, lastTouch = 0, played = false; // played: the visitor has used the controls
+    var touchUI = window.matchMedia('(hover: none)').matches;
     var heroTop = 0;                   // hero's top edge in the viewport, for the ASCII light
     var motes = [], sparks = [];       // dust in the white beam, glitter in the rainbow
 
     var hint = document.createElement('p');
     hint.className = 'hint';
-    hint.textContent = window.matchMedia('(hover: none)').matches ? 'tap to move the light' : 'move your cursor · bend the light';
+    hint.setAttribute('aria-hidden', 'true');
     hero.appendChild(hint);
+    function setHint() {
+      var moved = Math.abs(off.x) + Math.abs(off.y) > 4 || Math.abs(userRot) > 0.02;
+      // once the visitor has played, the instructions step aside; a small reset button remains
+      hint.classList.toggle('gone', played);
+      resetBtn.classList.toggle('show', moved && !resetting);
+      var l1 = pinned ? (touchUI ? 'light pinned · tap elsewhere to move it' : 'light pinned · click anywhere to release')
+        : (touchUI ? 'tap anywhere to move the light' : 'aim with your cursor · click to pin the light');
+      var l2 = touchUI ? 'drag the prism · ↻ turns it' : 'drag the prism · scroll on it or ↻ to turn';
+      var html = l1 + '<br>' + l2;
+      if (hint._html !== html) { hint.innerHTML = html; hint._html = html; }
+    }
+
+    // invisible handle over the glass (drag to move, wheel / keys to turn) and a turn knob
+    var handle = document.createElement('div');
+    handle.className = 'prism-handle';
+    handle.tabIndex = 0;
+    handle.setAttribute('role', 'application');
+    handle.setAttribute('aria-label', 'Glass prism. Drag to move it, arrow keys to turn it, shift and arrow keys to move it, R to reset.');
+    var knob = document.createElement('button');
+    knob.type = 'button';
+    knob.className = 'prism-knob';
+    knob.setAttribute('aria-label', 'Turn the prism (drag)');
+    knob.innerHTML = '<svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M20 12a8 8 0 1 1-2.34-5.66" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/><path d="M20 4v5h-5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+    var resetBtn = document.createElement('button');
+    resetBtn.type = 'button';
+    resetBtn.className = 'prism-reset';
+    resetBtn.textContent = 'reset';
+    resetBtn.setAttribute('aria-label', 'Put the prism back');
+    hero.appendChild(handle); hero.appendChild(knob); hero.appendChild(resetBtn);
 
     function layout() {
       var r = hero.getBoundingClientRect();
@@ -35,12 +68,11 @@
       cv.width = Math.round(W * DPR); cv.height = Math.round(H * DPR);
       gv.width = Math.round(W * DPR * 0.5); gv.height = Math.round(H * DPR * 0.5);
       var mobile = W < 900;
-      if (mobile) { C = { x: W * 0.42, y: H * 0.73 }; side = Math.min(W * 0.46, 240); }
-      else { C = { x: W * 0.72, y: H * 0.5 }; side = Math.min(H * 0.4, W * 0.24, 360); }
-      var h = side * Math.sqrt(3) / 2;
+      if (mobile) { C0 = { x: W * 0.42, y: H * 0.73 }; side = Math.min(W * 0.46, 240); }
+      else { C0 = { x: W * 0.72, y: H * 0.5 }; side = Math.min(H * 0.4, W * 0.24, 360); }
+      clampOff();
       shape();
-      hint.style.left = C.x + 'px';
-      hint.style.top = (C.y + h / 3 + 30) + 'px';
+      setHint();
       if (!motes.length) {
         for (var i = 0; i < 34; i++) motes.push({ u: Math.random(), off: (Math.random() - 0.5) * 16, sp: 0.0012 + Math.random() * 0.0025, ph: Math.random() * 6.28, r: 0.5 + Math.random() * 1.2 });
         for (var j = 0; j < 26; j++) sparks.push({ k: Math.random(), u: Math.random(), sp: 0.002 + Math.random() * 0.004, ph: Math.random() * 6.28, r: 0.6 + Math.random() * 1.1 });
@@ -48,18 +80,34 @@
       if (!src.x && !src.y) { var s = idleSource(0); src.x = s.x; src.y = s.y; }
     }
 
-    // equilateral triangle, apex up, turned by `rot` around its centroid
+    function clampOff() { // keep the whole prism inside the hero
+      var m = side * 0.62;
+      off.x = Math.max(m - C0.x, Math.min(W - m - C0.x, off.x));
+      off.y = Math.max(m + 40 - C0.y, Math.min(H - m - C0.y, off.y));
+    }
+
+    // equilateral triangle, apex up, moved by `off` and turned by userRot + rot
     function shape() {
-      var R = side / Math.sqrt(3);
+      C = { x: C0.x + off.x, y: C0.y + off.y };
+      var R = side / Math.sqrt(3), turn = userRot + rot;
       tri = [-Math.PI / 2, Math.PI / 6, Math.PI * 5 / 6].map(function (a) {
-        return { x: C.x + Math.cos(a + rot) * R, y: C.y + Math.sin(a + rot) * R };
+        return { x: C.x + Math.cos(a + turn) * R, y: C.y + Math.sin(a + turn) * R };
       });
-      // the beam aims at a point on the left face, a little below its middle
+      // the idle beam aims at a point on the left face, a little below its middle
       T = { x: tri[2].x + (tri[0].x - tri[2].x) * 0.42, y: tri[2].y + (tri[0].y - tri[2].y) * 0.42 };
+      // DOM controls follow the glass
+      var box = R * 2;
+      handle.style.width = handle.style.height = box + 'px';
+      handle.style.transform = 'translate(' + (C.x - R) + 'px,' + (C.y - R) + 'px)';
+      handle.style.clipPath = 'polygon(' + tri.map(function (q) { return ((q.x - C.x + R) / box * 100).toFixed(2) + '% ' + ((q.y - C.y + R) / box * 100).toFixed(2) + '%'; }).join(',') + ')';
+      var ka = -Math.PI / 2 + turn, kr = R + 30;
+      knob.style.transform = 'translate(' + (C.x + Math.cos(ka) * kr - 17) + 'px,' + (C.y + Math.sin(ka) * kr - 17) + 'px)';
+      resetBtn.style.transform = 'translate(' + C.x + 'px,' + (C.y + R / 2 + 22) + 'px) translateX(-50%)';
+      hint.style.transform = 'translate(' + C.x + 'px,' + (C.y + R / 2 + 28) + 'px) translateX(-50%)';
     }
 
     function idleSource(t) {
-      var a = Math.PI - (W < 900 ? 0.32 : 0.22) + Math.sin(t / 2600) * 0.14;
+      var a = Math.PI - (W < 900 ? 0.32 : 0.22) + userRot + Math.sin(t / 2600) * 0.14; // turns with the prism
       var R = Math.max(W, H);
       return { x: T.x + Math.cos(a) * R, y: T.y + Math.sin(a) * R };
     }
@@ -99,7 +147,8 @@
     function reflect(d, n) { var k = 2 * dot(d, n); return { x: d.x - k * n.x, y: d.y - k * n.y }; }
 
     function trace(s) {
-      var d = norm(sub(T, s));
+      if (inGlass(s, 0)) return null;
+      var d = norm(sub(aimPt || T, s));
       var h0 = hit(s, d, -1);
       if (!h0) return null;
       var n0 = edgeNormal(h0.i);
@@ -109,7 +158,7 @@
         var dir = refract(d, n0, 1 / n);
         if (!dir) return null;
         var p = h0.p, skip = h0.i, inside = [p], out = null;
-        for (var b = 0; b < 4 && !out; b++) {
+        for (var b = 0; b < 7 && !out; b++) {
           var h = hit(p, dir, skip);
           if (!h) break;
           inside.push(h.p);
@@ -121,7 +170,7 @@
         if (!out) continue;
         rays.push({ f: f, inside: inside, out: out });
       }
-      return { entry: h0.p, rays: rays };
+      return { entry: h0.p, d: d, n0: n0, rays: rays };
     }
 
     function hue(f) { return Math.round(f * 275); } // red -> violet
@@ -169,6 +218,13 @@
           o[0].beginPath(); o[0].moveTo(src.x, src.y); o[0].lineTo(ex.x, ex.y); o[0].stroke();
         });
 
+        // a little of the light bounces off the first face
+        var rd = norm(reflect(tr.d, tr.n0)), rl = side * 2.2;
+        var rg = ctx.createLinearGradient(ex.x, ex.y, ex.x + rd.x * rl, ex.y + rd.y * rl);
+        rg.addColorStop(0, rgba(0.28 * flick)); rg.addColorStop(1, rgba(0));
+        ctx.strokeStyle = rg; ctx.lineWidth = 1.2;
+        ctx.beginPath(); ctx.moveTo(ex.x, ex.y); ctx.lineTo(ex.x + rd.x * rl, ex.y + rd.y * rl); ctx.stroke();
+
         // dust drifting through the beam, brighter close to the prism
         ctx.globalCompositeOperation = 'lighter';
         motes.forEach(function (m) {
@@ -190,6 +246,15 @@
           ctx.fillStyle = gi; ctx.beginPath(); ctx.moveTo(ex.x, ex.y); ctx.lineTo(r0.out.p.x, r0.out.p.y); ctx.lineTo(r1.out.p.x, r1.out.p.y); ctx.closePath(); ctx.fill();
         }
 
+        // light that bounced inside the glass (total internal reflection)
+        tr.rays.forEach(function (r) {
+          if (r.inside.length < 3) return;
+          ctx.strokeStyle = 'hsla(' + hue(r.f) + ',100%,70%,0.22)'; ctx.lineWidth = 1.2;
+          ctx.beginPath(); ctx.moveTo(r.inside[0].x, r.inside[0].y);
+          for (var j = 1; j < r.inside.length; j++) ctx.lineTo(r.inside[j].x, r.inside[j].y);
+          ctx.stroke();
+        });
+
         // outgoing rainbow fan: a quad between neighbouring wavelengths
         gtx.globalCompositeOperation = 'lighter';
         var exitSum = { x: 0, y: 0, n: 0 }, bands = [], band = null;
@@ -197,7 +262,7 @@
           var a = tr.rays[q].out, b = tr.rays[q + 1].out;
           // neighbours leaving through different faces (or after internal
           // reflection) are not one band: joining them paints a huge wedge
-          if (a.e !== b.e || dot(a.d, b.d) < 0.996) continue;
+          if (a.e !== b.e || tr.rays[q].inside.length !== tr.rays[q + 1].inside.length || dot(a.d, b.d) < 0.996) continue;
           exitSum.x += a.p.x; exitSum.y += a.p.y; exitSum.n++;
           var col = hue((tr.rays[q].f + tr.rays[q + 1].f) / 2);
           // for the ASCII light, neighbouring slivers of one hue are merged into
@@ -279,8 +344,7 @@
         var fl = ctx.createRadialGradient(e.x, e.y, 0, e.x, e.y, 40);
         fl.addColorStop(0, rgba(0.95 * flick)); fl.addColorStop(0.25, rgba(0.35 * flick)); fl.addColorStop(1, rgba(0));
         ctx.fillStyle = fl; ctx.beginPath(); ctx.arc(e.x, e.y, 40, 0, Math.PI * 2); ctx.fill();
-        var fdx = tri[0].x - tri[2].x, fdy = tri[0].y - tri[2].y, fl2 = Math.hypot(fdx, fdy) || 1;
-        fdx /= fl2; fdy /= fl2;
+        var fdx = -tr.n0.y, fdy = tr.n0.x;
         var st = ctx.createLinearGradient(e.x - fdx * 34, e.y - fdy * 34, e.x + fdx * 34, e.y + fdy * 34);
         st.addColorStop(0, rgba(0)); st.addColorStop(0.5, rgba(0.7 * flick)); st.addColorStop(1, rgba(0));
         ctx.strokeStyle = st; ctx.lineWidth = 1.2;
@@ -288,59 +352,127 @@
       }
     }
 
-    // keep the light coming from the left: from the right or from below, the
-    // rainbow would be thrown back across the headline and the text
-    function fromLeft(p) {
-      var v = sub(p, T), r = Math.max(Math.hypot(v.x, v.y), side * 0.6);
-      var a = Math.atan2(v.y, v.x); if (a < 0) a += Math.PI * 2;
-      // from below-left up to just under level: the beam then meets the
-      // left face near the angle of least deviation and leaves as a full rainbow
-      var lo = Math.PI - 0.5, hi = Math.PI - 0.1;
-      if (a < lo || a > hi) { // snap to the nearer edge of the allowed range (around the circle)
-        var dLo = Math.min(Math.abs(a - lo), Math.PI * 2 - Math.abs(a - lo));
-        var dHi = Math.min(Math.abs(a - hi), Math.PI * 2 - Math.abs(a - hi));
-        a = dLo < dHi ? lo : hi;
-      }
-      return { x: T.x + Math.cos(a) * r, y: T.y + Math.sin(a) * r };
-    }
-
-    function nearPrism(p) {
-      for (var i = 0; i < 3; i++) if (dot(sub(p, tri[i]), edgeNormal(i)) > side * 0.12) return false;
+    function inGlass(p, pad) { // is p inside the glass (grown by pad)?
+      for (var i = 0; i < 3; i++) if (dot(sub(p, tri[i]), edgeNormal(i)) > pad) return false;
       return true;
     }
+    function local(e) { var r = hero.getBoundingClientRect(); return { x: e.clientX - r.left, y: e.clientY - r.top }; }
 
-    var lastDraw = 0;
+    var lastDraw = 0, lastPose = '';
+    function update(now, instant) {
+      heroTop = hero.getBoundingClientRect().top;
+      if (resetting) {
+        off.x *= 0.85; off.y *= 0.85; userRot *= 0.85;
+        if (Math.abs(off.x) + Math.abs(off.y) < 0.5 && Math.abs(userRot) < 0.002) { off.x = off.y = 0; userRot = 0; resetting = false; }
+      }
+      // where the light comes from: pinned point, the cursor, or a slow idle sweep
+      var user = pinned || (mouse && !drag && !inGlass(mouse, side * 0.08) ? mouse : null);
+      var goal = user || (mouse && (drag || inGlass(mouse, side * 0.08)) ? src : idleSource(now - t0));
+      var k = instant ? 1 : user ? 0.2 : 0.05;
+      src.x += (goal.x - src.x) * k; src.y += (goal.y - src.y) * k;
+      // the visitor's light aims at the middle of the glass, the idle light at the left face
+      var aimGoal = user ? C : T;
+      if (!aimPt || instant) aimPt = { x: aimGoal.x, y: aimGoal.y };
+      aimPt.x += (aimGoal.x - aimPt.x) * 0.2; aimPt.y += (aimGoal.y - aimPt.y) * 0.2;
+      // the prism breathes when nobody is holding it
+      var tilt = drag ? 0 : Math.sin((now - t0) / 4200) * 0.03;
+      rot += (tilt - rot) * 0.05;
+      shape();
+      setHint();
+      draw(now);
+    }
     function step(now) {
       if (running) requestAnimationFrame(step);
       if (now - lastDraw < 15) return; // ~60 fps is plenty, also on 120/240 Hz screens
       lastDraw = now;
-      heroTop = hero.getBoundingClientRect().top;
-      var goal = mouse && !nearPrism(mouse) ? fromLeft(mouse) : idleSource(now - t0);
-      var k = mouse ? 0.16 : 0.05;
-      src.x += (goal.x - src.x) * k; src.y += (goal.y - src.y) * k;
-      // the prism breathes a little and leans slightly towards the cursor
-      var tilt = Math.sin((now - t0) / 4200) * 0.03 + (mouse ? Math.max(-1, Math.min(1, (mouse.y - C.y) / (H * 0.5))) * 0.04 : 0);
-      rot += (tilt - rot) * 0.05;
-      shape();
-      draw(now);
+      update(now, false);
     }
+    function poke() { if (reduced || !running) update(performance.now(), true); } // redraw when not animating
     function start() { if (!running && !reduced) { running = true; requestAnimationFrame(step); } }
     function stop() { running = false; window.__prismLight = null; }
 
-    function aim(e) {
-      var r = hero.getBoundingClientRect();
-      mouse = { x: e.clientX - r.left, y: e.clientY - r.top };
-      if (reduced && !nearPrism(mouse)) { var g = fromLeft(mouse); src.x = g.x; src.y = g.y; draw(performance.now()); }
+    // ---- aiming the light ----
+    hero.style.cursor = touchUI ? '' : 'crosshair';
+    hero.addEventListener('pointermove', function (e) { if (e.pointerType === 'mouse') { mouse = local(e); poke(); } });
+    hero.addEventListener('pointerleave', function (e) { if (e.pointerType === 'mouse' && !drag) { mouse = null; poke(); } });
+    function isControl(t) { return t.closest('a, button, .prism-handle, .prism-knob, .prism-reset, .hero-text, .hero-foot, input'); }
+    hero.addEventListener('click', function (e) {
+      if (isControl(e.target) || Date.now() - lastTouch < 600) return;
+      var p = local(e);
+      if (inGlass(p, side * 0.08)) return;
+      played = true;
+      pinned = pinned ? null : p; // click pins the light here, a second click lets it follow again
+      poke();
+    });
+    hero.addEventListener('pointerdown', function (e) {
+      if (e.pointerType === 'mouse' || isControl(e.target)) return;
+      lastTouch = Date.now();
+      var p = local(e);
+      if (!inGlass(p, side * 0.08)) { pinned = p; played = true; poke(); } // a tap moves the light there
+    });
+
+    // ---- moving and turning the prism ----
+    function grab(e, mode) {
+      e.preventDefault(); e.stopPropagation();
+      var p = local(e);
+      played = true;
+      drag = { mode: mode, id: e.pointerId, p: p, off: { x: off.x, y: off.y }, rot: userRot, ang: Math.atan2(p.y - C.y, p.x - C.x) };
+      resetting = false;
+      e.currentTarget.setPointerCapture(e.pointerId);
+      hero.classList.add('prism-dragging');
     }
-    // mouse: the beam follows the cursor. touch: a tap moves the light source
-    // (dragging would scroll the page, so it is not used)
-    hero.addEventListener('pointermove', function (e) { if (e.pointerType === 'mouse') aim(e); });
-    hero.addEventListener('pointerdown', function (e) { if (e.pointerType !== 'mouse') aim(e); });
-    hero.addEventListener('pointerleave', function (e) { if (e.pointerType === 'mouse') mouse = null; });
+    function move(e) {
+      if (!drag || e.pointerId !== drag.id) return;
+      var p = local(e);
+      if (drag.mode === 'move') { off.x = drag.off.x + p.x - drag.p.x; off.y = drag.off.y + p.y - drag.p.y; clampOff(); }
+      else userRot = drag.rot + Math.atan2(p.y - C.y, p.x - C.x) - drag.ang;
+      if (e.pointerType === 'mouse') mouse = p;
+      poke();
+    }
+    function release(e) {
+      if (!drag || e.pointerId !== drag.id) return;
+      drag = null; hero.classList.remove('prism-dragging');
+      poke();
+    }
+    [handle, knob].forEach(function (el, i) {
+      el.addEventListener('pointerdown', function (e) { grab(e, i ? 'rotate' : 'move'); });
+      el.addEventListener('pointermove', move);
+      el.addEventListener('pointerup', release);
+      el.addEventListener('pointercancel', release);
+      el.addEventListener('click', function (e) { e.stopPropagation(); });
+    });
+    handle.addEventListener('wheel', function (e) {
+      e.preventDefault();
+      userRot += Math.max(-0.12, Math.min(0.12, e.deltaY * 0.0022));
+      played = true;
+      resetting = false; poke();
+    }, { passive: false });
+    function reset() { resetting = true; if (reduced) { off.x = off.y = 0; userRot = 0; resetting = false; } poke(); }
+    handle.addEventListener('dblclick', reset);
+    resetBtn.addEventListener('click', function (e) { e.stopPropagation(); reset(); });
+    var lastTap = 0;
+    handle.addEventListener('pointerup', function (e) {
+      if (e.pointerType === 'mouse') return;
+      if (Date.now() - lastTap < 320) reset();
+      lastTap = Date.now();
+    });
+    handle.addEventListener('keydown', function (e) {
+      var k = e.key, used = true;
+      if (k === 'ArrowLeft' || k === 'ArrowRight' || k === 'ArrowUp' || k === 'ArrowDown') {
+        if (e.shiftKey) {
+          off.x += k === 'ArrowLeft' ? -14 : k === 'ArrowRight' ? 14 : 0;
+          off.y += k === 'ArrowUp' ? -14 : k === 'ArrowDown' ? 14 : 0;
+          clampOff();
+        } else userRot += (k === 'ArrowLeft' || k === 'ArrowUp' ? -1 : 1) * 0.05;
+        resetting = false;
+      } else if (k === 'r' || k === 'R') reset();
+      else used = false;
+      if (used) { played = true; e.preventDefault(); poke(); }
+    });
 
     var rt;
-    window.addEventListener('resize', function () { clearTimeout(rt); rt = setTimeout(function () { layout(); draw(performance.now()); }, 120); });
-    layout(); draw(performance.now());
+    window.addEventListener('resize', function () { clearTimeout(rt); rt = setTimeout(function () { layout(); update(performance.now(), true); }, 120); });
+    layout(); update(performance.now(), true);
     if ('IntersectionObserver' in window) {
       new IntersectionObserver(function (es) { es[0].isIntersecting ? start() : stop(); }).observe(hero);
     } else start();

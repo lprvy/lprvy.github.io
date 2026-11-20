@@ -65,7 +65,18 @@ h1 { font-family: var(--display); font-weight: 400; font-size: clamp(5rem, 15vw,
 .role span { color: var(--red); }
 .sub { color: var(--muted); max-width: 470px; margin: 0 0 28px; }
 .row { display: flex; flex-wrap: wrap; gap: 12px; }
-.hint { position: absolute; z-index: 3; font: 500 .72rem var(--mono); color: rgba(255,255,255,.45); letter-spacing: .12em; text-transform: uppercase; transform: translate(-50%, 0); white-space: nowrap; pointer-events: none; margin: 0; }
+.hint { position: absolute; left: 0; top: 0; z-index: 3; font: 500 .68rem/1.9 var(--mono); color: rgba(255,255,255,.45); letter-spacing: .1em; text-transform: uppercase; text-align: center; white-space: nowrap; pointer-events: none; margin: 0; }
+.prism-handle { position: absolute; left: 0; top: 0; z-index: 4; cursor: grab; touch-action: none; outline: none; }
+.prism-handle:focus-visible { background: rgba(229,32,46,.07); }
+.hint { transition: opacity .5s; }
+.hint.gone { opacity: 0; }
+.prism-reset { position: absolute; left: 0; top: 0; z-index: 4; font: 600 .66rem var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--text); background: rgba(20,20,22,.75); border: 1px solid rgba(255,255,255,.3); border-radius: 999px; padding: 6px 12px; cursor: pointer; opacity: 0; pointer-events: none; transition: opacity .3s, border-color .2s; }
+.prism-reset.show { opacity: .8; pointer-events: auto; }
+.prism-reset:hover, .prism-reset:focus-visible { opacity: 1; border-color: var(--red); outline: none; }
+.prism-dragging, .prism-dragging .prism-handle, .prism-dragging .prism-knob { cursor: grabbing !important; }
+.prism-knob { position: absolute; left: 0; top: 0; z-index: 4; width: 34px; height: 34px; border-radius: 50%; display: grid; place-items: center; padding: 0;
+  color: #fff; background: rgba(20,20,22,.7); border: 1px solid rgba(255,255,255,.35); cursor: grab; touch-action: none; opacity: .55; transition: opacity .2s, border-color .2s, background .2s; }
+.prism-knob:hover, .prism-knob:focus-visible, .prism-dragging .prism-knob { opacity: 1; border-color: var(--red); background: rgba(229,32,46,.25); outline: none; }
 .hero-foot { position: relative; z-index: 3; width: 100%; display: flex; flex-wrap: wrap; gap: 10px 36px; margin-top: 64px; font-family: var(--display); font-size: 1.05rem; letter-spacing: .04em; text-transform: uppercase; color: var(--muted); }
 .hero-foot b { color: var(--red); font-weight: 400; margin-right: 6px; }
 
