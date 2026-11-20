@@ -167,14 +167,25 @@ h1 { font-family: var(--display); font-weight: 400; font-size: clamp(5rem, 15vw,
 .cw-lock { display: none; font-style: normal; font-size: 9px; color: #b48cff; border: 1px solid rgba(180,140,255,.55); border-radius: 3px; padding: 2px 4px; letter-spacing: .04em; }
 .cw-file.locked .cw-lock { display: inline-block; }
 .cw-file.locked svg { color: #b48cff !important; }
-.cw-file.held svg { transform: scale(1.15) rotate(-6deg); }
-.cw-file.held { opacity: 1; }
+.cw-file.carried svg { transform: scale(1.12) rotate(-6deg); }
+.cw-file.carried { opacity: 1; }
+.cw-file.hover { opacity: 1; }
+.cw-file.hover svg { transform: translateY(-2px) scale(1.08); filter: drop-shadow(0 0 8px currentColor); }
+.cw-file.held { opacity: 1; z-index: 2; }
+.cw-file.held svg { transform: scale(1.22) rotate(-8deg); filter: drop-shadow(0 6px 10px rgba(0,0,0,.8)) drop-shadow(0 0 10px currentColor); }
+.cw-file.held .cw-name { color: #fff; }
+.cw-file.tugged svg { animation: cwtug .16s linear infinite; }
+@keyframes cwtug { 0%, 100% { transform: scale(1.22) rotate(-11deg); } 50% { transform: scale(1.22) rotate(-4deg); } }
+.cw-file.by-user .cw-name { color: #fff; text-decoration-color: #ff4452; }
+html.cw-grab, html.cw-grab * { cursor: grab !important; }
+html.cw-dragging, html.cw-dragging * { cursor: grabbing !important; user-select: none !important; }
 .cw-file.flash .cw-name b { animation: cwflash .6s ease; }
 @keyframes cwflash { 0% { text-shadow: 0 0 10px currentColor; } 100% { text-shadow: none; } }
 .cw-file.dying { transition: opacity .8s, filter .8s; opacity: 0; filter: blur(2px); }
 .cw-file.dying .cw-name { text-decoration: line-through; color: #ff4452; }
+.cw-ptr { display: block; width: 20px; height: 20px; transform-origin: 4px 2px; }
 .cw-agent svg { width: 20px; height: 20px; display: block; filter: drop-shadow(0 1px 3px rgba(0,0,0,.7)); transform-origin: 4px 2px; }
-.cw-agent.press svg { animation: cwpress .25s ease; }
+.cw-ptr.press svg { animation: cwpress .25s ease; }
 @keyframes cwpress { 50% { transform: scale(.82); } }
 .cw-agent.shake { animation: cwshake .45s ease; }
 @keyframes cwshake { 20%, 60% { margin-left: -4px; } 40%, 80% { margin-left: 4px; } }
