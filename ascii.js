@@ -230,6 +230,8 @@
   function start() {
     build();
     if (reduced) return; // static texture only
+    // other scripts (the cursor war) can drop a ripple too
+    window.__asciiDrop = function (x, y, p) { if (cur) drop(x, y, p); };
     window.addEventListener('pointermove', onMove, { passive: true });
     window.addEventListener('pointerdown', function (e) { drop(e.clientX, e.clientY, 420); lastInput = performance.now(); }, { passive: true });
     document.documentElement.addEventListener('mouseleave', function () { last = null; });

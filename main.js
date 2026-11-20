@@ -487,27 +487,6 @@
     document.addEventListener('keydown', function (e) { if (e.key === 'Escape') setMenu(false); });
   }
 
-  /* ================= FLOATING CURSORS ================= */
-  var box = document.querySelector('.cursors');
-  if (box && !reduced) {
-    var svg = '<svg viewBox="0 0 24 24"><path d="M4 2l16 9-7 2-3 8z" fill="#e5202e" stroke="#ff6b75" stroke-width="1"/></svg>';
-    for (var i = 0; i < 9; i++) {
-      var w = document.createElement('div');
-      w.innerHTML = svg;
-      var s = w.firstChild;
-      s.style.left = (Math.random() * 100) + 'vw';
-      s.style.top = (Math.random() * 100) + 'vh';
-      s.style.setProperty('--dx', (Math.random() * 240 - 120) + 'px');
-      s.style.setProperty('--dy', (Math.random() * 240 - 120) + 'px');
-      s.style.setProperty('--r', (Math.random() * 60 - 30) + 'deg');
-      s.style.setProperty('--o', (0.12 + Math.random() * 0.3).toFixed(2));
-      var sz = 12 + Math.random() * 12; s.style.width = s.style.height = sz + 'px';
-      s.style.animationDuration = (14 + Math.random() * 18) + 's';
-      s.style.animationDelay = (-Math.random() * 20) + 's';
-      box.appendChild(s);
-    }
-  }
-
   /* ================= REVEAL + COUNTER ================= */
   var items = document.querySelectorAll('.reveal');
   function countUp(el) {
