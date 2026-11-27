@@ -319,7 +319,7 @@
     var fs = Math.min(15, w * 0.86 / (longest * 0.6), h / (lines.length * 1.35));
     x.font = 'bold ' + fs.toFixed(1) + 'px ' + MONO; x.textBaseline = 'top';
     lines.forEach(function (l, i) {
-      x.fillStyle = /FATAL|ERROR|==>/.test(l) ? '#ff4452' : /WARN|Severity/.test(l) ? '#f5a524' : /^[$#]|^F\d/.test(l) ? '#3ddc84' : '#d6d6d6';
+      x.fillStyle = /FATAL|ERROR|CRIT|HIGH|failed \d*[1-9]| -\d/.test(l) ? '#ff4452' : /WARN|Severity|MED/.test(l) ? '#f5a524' : /^[$#v]\s|^F\d|LOW|passed/.test(l) ? '#3ddc84' : '#d6d6d6';
       x.fillText(l, w * 0.07, y + i * fs * 1.35);
     });
   }
@@ -348,6 +348,7 @@
     } else { // terminal projects: title + the text itself
       var lines = card.term ? card.term.split('\n') : [];
       var y2 = titleBlock(x, words, w, h * 0.05, h * 0.26) + h * 0.03;
+      card.titleBox = { words: words, y: h * 0.05, h: y2 - h * 0.05 - h * 0.03 };
       if (kind === 'potato') { // a small potato with a big grin
         var cx = w / 2, cy = y2 + h * 0.13, rx = w * 0.3, ry = h * 0.11;
         var g = x.createRadialGradient(cx - rx * 0.3, cy - ry * 0.4, 4, cx, cy, rx * 1.1);
@@ -409,6 +410,20 @@
       var tb = card.termBox;
       o.fillStyle = '#0d0d0e'; o.fillRect(0, tb.y - 6, w, h - tb.y + 6);
       termLines(o, tb.lines, w, tb.y, tb.h);
+    }
+    // ...and the title becomes clean ASCII letters, like the page headings
+    if (s === LAST && card.titleBox) {
+      var ti = card.titleBox, lh = ti.h / ti.words.length;
+      o.fillStyle = '#0d0d0e'; o.fillRect(0, 0, w, ti.y + ti.h + 2);
+      o.textBaseline = 'top';
+      ti.words.forEach(function (word, wi) {
+        var R = 9, a = artLines([[{ t: word, red: false }]], R);
+        var fz = Math.min(w * 0.86 / (a.cols * 0.6), lh / (R + 0.5));
+        o.font = 'bold ' + fz.toFixed(2) + 'px ' + MONO; o.fillStyle = '#f2f2f0';
+        a.grid.forEach(function (row, ry) {
+          row.forEach(function (c, cx) { if (c.ch !== ' ') o.fillText(c.ch, w * 0.07 + cx * fz * 0.6, ti.y + wi * lh + ry * fz); });
+        });
+      });
     }
     return out;
   }

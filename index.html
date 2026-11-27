@@ -15,7 +15,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Anton&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20261127a">
+<link rel="stylesheet" href="style.css?v=20261127b">
 </head>
 <body>
 
@@ -77,8 +77,19 @@
       </div>
       <div class="work-track">
 
-        <article class="phone" data-kind="desk" data-title="BUG BOARD">
-          <div class="screen"><img src="img/bugboard-board.png" width="1280" height="800" alt="Bugboard: bug list with stats, filters and severity badges" loading="lazy"></div>
+        <article class="phone" data-kind="term" data-title="BUG BOARD">
+          <div class="screen"><pre class="term">6 total | 4 open
+1 in progress
+1 resolved
+-------------------
+#6 .exe upload  [HIGH]
+#5 error toast   [MED]
+#4 dup results  [HIGH]
+#3 discount     [CRIT]
+#2 pricing typo  [LOW]
+#1 safari login [HIGH]
+-------------------
+[ + report bug ]</pre></div>
           <div class="phone-body">
             <p class="evo" aria-hidden="true"></p>
             <h3><span class="n">01</span> BUGBOARD</h3>
@@ -88,8 +99,18 @@
           </div>
         </article>
 
-        <article class="phone" data-kind="desk" data-title="QA PLAY GROUND">
-          <div class="screen"><img src="img/qa-report.png" width="1280" height="860" alt="Playwright report: 67 tests passed" loading="lazy"></div>
+        <article class="phone" data-kind="term" data-title="QA PLAY GROUND">
+          <div class="screen"><pre class="term">$ npx playwright test
+67 passed | 0 failed
+chromium firefox mobile
+-------------------
+v happy path   752ms
+v first name   671ms
+v last name    504ms
+v postal code  531ms
+v cart totals  2.0s
+-------------------
+total time: 31.2s</pre></div>
           <div class="phone-body">
             <p class="evo" aria-hidden="true"></p>
             <h3><span class="n">02</span> QA PLAYGROUND</h3>
@@ -147,8 +168,18 @@ Component: checkout
           </div>
         </article>
 
-        <article class="phone" data-kind="phone">
-          <div class="screen"><img src="img/expense-journal.png" width="780" height="1688" alt="Expense journal: daily entries" loading="lazy"></div>
+        <article class="phone" data-kind="term" data-title="EXPENSE JOURNAL">
+          <div class="screen"><pre class="term"># journal 17.11.2026
+09:10 coffee    -45 TL
+12:30 lunch  -185,5 TL
+18:05 market   -640 TL
+-------------------
+#food #market #rent
+#bills #salary #fun
+-------------------
+[ + income ] [ - spend ]
+-------------------
+today    -870,5 TL</pre></div>
           <div class="phone-body">
             <p class="evo" aria-hidden="true"></p>
             <h3><span class="n">05</span> EXPENSE JOURNAL</h3>
@@ -158,8 +189,18 @@ Component: checkout
           </div>
         </article>
 
-        <article class="phone" data-kind="phone">
-          <div class="screen"><img src="img/fitness-workout.png" width="780" height="1688" alt="Fitness tracker: workout" loading="lazy"></div>
+        <article class="phone" data-kind="term" data-title="FITNESS TRACKER">
+          <div class="screen"><pre class="term"># tuesday: full body
+-------------------
+[ ] box step-up
+    3 x 6   rest 90s
+[ ] bench press
+    3 x 5   60 kg
+    rest 120s
+[ ] weighted pull-up
+    3 x 6   rest 120s
+-------------------
+week 3/12  kcal 2450</pre></div>
           <div class="phone-body">
             <p class="evo" aria-hidden="true"></p>
             <h3><span class="n">06</span> FITNESS TRACKER</h3>
@@ -240,8 +281,8 @@ release.zip (CI)</pre></div>
   <span>(c) 2026 / hand-written HTML, CSS &amp; a little JS / <a href="https://github.com/lprvy/lprvy.github.io">source</a></span>
 </footer>
 
-<script src="ascii.js?v=20261127a"></script>
-<script src="main.js?v=20261127a"></script>
-<script src="ascii-ui.js?v=20261127a"></script>
+<script src="ascii.js?v=20261127b"></script>
+<script src="main.js?v=20261127b"></script>
+<script src="ascii-ui.js?v=20261127b"></script>
 </body>
 </html>
