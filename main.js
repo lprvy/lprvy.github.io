@@ -1,4 +1,6 @@
-/* Portfolio interactions: prism light, floating cursors, reveal, counter. No dependencies. */
+/* Portfolio interactions: prism light, mobile menu, reveal. No dependencies.
+   The prism is no longer painted here: this file traces the light and hands
+   the beam, the rainbow and the glass to ascii.js, which draws them in ASCII. */
 (function () {
   'use strict';
   document.documentElement.classList.remove('no-js');
@@ -36,10 +38,10 @@
       // once the visitor has played, the instructions step aside; a small reset button remains
       hint.classList.toggle('gone', played);
       resetBtn.classList.toggle('show', moved && !resetting);
-      var l1 = pinned ? (touchUI ? 'light pinned · tap elsewhere to move it' : 'light pinned · click anywhere to release')
-        : (touchUI ? 'tap anywhere to move the light' : 'aim with your cursor · click to pin the light');
-      var l2 = touchUI ? 'drag the prism · ↻ turns it' : 'drag the prism · scroll on it or ↻ to turn';
-      var html = l1 + '<br>' + l2;
+      var l1 = pinned ? (touchUI ? 'light pinned | tap elsewhere to move it' : 'light pinned | click anywhere to release')
+        : (touchUI ? 'tap anywhere to move the light' : 'aim with your cursor | click to pin the light');
+      var l2 = touchUI ? 'drag the prism | (@) turns it' : 'drag the prism | scroll on it or (@) to turn';
+      var html = '&gt; ' + l1 + '<br>&gt; ' + l2;
       if (hint._html !== html) { hint.innerHTML = html; hint._html = html; }
     }
 
@@ -53,7 +55,7 @@
     knob.type = 'button';
     knob.className = 'prism-knob';
     knob.setAttribute('aria-label', 'Turn the prism (drag)');
-    knob.innerHTML = '<svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M20 12a8 8 0 1 1-2.34-5.66" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/><path d="M20 4v5h-5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+    knob.innerHTML = '<span aria-hidden="true">(@)</span>';
     var resetBtn = document.createElement('button');
     resetBtn.type = 'button';
     resetBtn.className = 'prism-reset';
@@ -65,8 +67,8 @@
       var r = hero.getBoundingClientRect();
       W = r.width; H = r.height;
       DPR = Math.min(window.devicePixelRatio || 1, 2);
-      cv.width = Math.round(W * DPR); cv.height = Math.round(H * DPR);
-      gv.width = Math.round(W * DPR * 0.5); gv.height = Math.round(H * DPR * 0.5);
+      // the canvases stay 1x1 and hidden: the light is shown by the ASCII background
+      cv.width = cv.height = gv.width = gv.height = 1;
       var mobile = W < 900;
       if (mobile) { C0 = { x: W * 0.42, y: H * 0.73 }; side = Math.min(W * 0.46, 240); }
       else { C0 = { x: W * 0.72, y: H * 0.5 }; side = Math.min(H * 0.4, W * 0.24, 360); }
@@ -283,6 +285,8 @@
         }
 
         bands.forEach(function (o) {
+          // the colours fanning out inside the glass
+          light.push({ h: o.h, pts: [ex, o.a.p, o.b.p], g0: ex, g1: { x: ex.x + (o.a.p.x - ex.x) * 3, y: ex.y + (o.a.p.y - ex.y) * 3 } });
           light.push({ h: o.h, pts: [o.a.p, { x: o.a.p.x + o.a.d.x * L, y: o.a.p.y + o.a.d.y * L }, { x: o.b.p.x + o.b.d.x * L, y: o.b.p.y + o.b.d.y * L }, o.b.p], g0: o.a.p, g1: { x: o.a.p.x + o.a.d.x * L * 0.55, y: o.a.p.y + o.a.d.y * L * 0.55 } });
         });
 
@@ -308,7 +312,7 @@
         ctx.globalCompositeOperation = 'source-over';
       }
 
-      window.__prismLight = { top: heroTop, polys: light };
+      window.__prismLight = { top: heroTop, polys: light, tri: tri.slice(), entry: tr ? tr.entry : null };
 
       // ---- the glass ----
       // body: cool top-to-bottom tint
@@ -489,21 +493,11 @@
 
   /* ================= REVEAL + COUNTER ================= */
   var items = document.querySelectorAll('.reveal');
-  function countUp(el) {
-    var to = +el.dataset.to, t = performance.now();
-    (function tick(now) {
-      var p = Math.min((now - t) / 1400, 1);
-      el.textContent = Math.round(to * (1 - Math.pow(1 - p, 3)));
-      if (p < 1) requestAnimationFrame(tick);
-    })(t);
-  }
   if ('IntersectionObserver' in window && !reduced) {
     var io = new IntersectionObserver(function (es) {
       es.forEach(function (e) {
         if (!e.isIntersecting) return;
         e.target.classList.add('in');
-        var c = e.target.querySelector('.count');
-        if (c) countUp(c);
         io.unobserve(e.target);
       });
     }, { threshold: 0.12 });

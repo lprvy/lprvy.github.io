@@ -11,30 +11,28 @@
 <meta property="og:url" content="https://lprvy.github.io/">
 <meta property="og:image" content="https://lprvy.github.io/img/bugboard-board.png">
 <meta name="theme-color" content="#0a0a0a">
-<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='18' fill='%23e5202e'/><text x='50' y='74' font-size='66' text-anchor='middle' font-family='Arial Black,Arial' font-weight='900' fill='white'>A</text></svg>">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' fill='%230a0a0a'/><text x='50' y='70' font-size='62' text-anchor='middle' font-family='Consolas,monospace' font-weight='700' fill='%23e5202e'>&gt;_</text></svg>">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Anton&family=Caveat:wght@600&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20261120f">
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css?v=20261127a">
 </head>
 <body>
 
 <canvas class="ascii-bg" aria-hidden="true"></canvas>
-<div class="cursors" aria-hidden="true"></div>
 
 <header class="nav">
   <div class="wrap nav-inner">
     <a class="logo" href="#top" aria-label="lprvy, back to top"><span class="tilde">~/</span>lprvy<span class="caret">_</span></a>
     <nav id="site-nav">
-      <a href="#work">Work</a>
-      <a href="#numbers">Numbers</a>
-      <a href="#journey">Journey</a>
-      <a href="#contact">Contact</a>
-      <a class="nav-ytbot" href="https://archlinux.tail33ab38.ts.net:8443/" target="_blank" rel="noopener">YT Bot ↗</a>
+      <a href="#work">work</a>
+      <a href="#numbers">numbers</a>
+      <a href="#journey">journey</a>
+      <a href="#contact">contact</a>
     </nav>
     <div class="nav-right">
-      <a class="btn-red small" href="https://github.com/lprvy">GitHub ↗</a>
-      <button class="menu" type="button" aria-label="Open menu" aria-expanded="false" aria-controls="site-nav"><span></span><span></span></button>
+      <a class="btn small" href="https://github.com/lprvy">github -&gt;</a>
+      <button class="menu" type="button" aria-label="Open menu" aria-expanded="false" aria-controls="site-nav">[=]</button>
     </div>
   </div>
 </header>
@@ -47,153 +45,149 @@
     <canvas class="prism" aria-hidden="true"></canvas>
     <div class="wrap hero-inner">
       <div class="hero-text">
-        <p class="hello">Hello, I'm</p>
-        <h1>ALPER</h1>
+        <p class="hello">&gt; hello, i'm</p>
+        <h1 data-ascii="16">ALPER</h1>
         <p class="role">DEVELOPER &amp;<br><span>BUG HUNTER.</span></p>
         <p class="sub">Backend &amp; frontend developer from Türkiye. I build APIs, databases and the UIs on top of them, then I try to break them the way a curious user would.</p>
         <div class="row">
-          <a class="btn-red" href="#work">See the work →</a>
-          <a class="btn-line" href="#contact">Let's talk</a>
+          <a class="btn red" href="#work">see the work -&gt;</a>
+          <a class="btn" href="#contact">let's talk</a>
         </div>
       </div>
-
     </div>
     <div class="wrap hero-foot">
-      <span><b>01</b> Build it</span><span><b>02</b> Break it</span><span><b>03</b> Report it</span><span><b>04</b> Fix it</span>
+      <span><b>01</b> build it</span><span><b>02</b> break it</span><span><b>03</b> report it</span><span><b>04</b> fix it</span>
     </div>
   </section>
 
-  <!-- STACK STRIP -->
+  <!-- STACK STRIP: characters scatter away from the cursor (ascii-ui.js) -->
   <section class="strip" aria-label="Tech stack">
-    <div class="strip-track">
-      <span>TypeScript</span><span>React</span><span>Next.js</span><span>Node.js</span><span>Express</span><span>PostgreSQL</span><span>Python</span><span>Rust</span><span>Playwright</span><span>Jest</span><span>Docker</span><span>GitHub Actions</span><span>Claude API</span>
-      <span>TypeScript</span><span>React</span><span>Next.js</span><span>Node.js</span><span>Express</span><span>PostgreSQL</span><span>Python</span><span>Rust</span><span>Playwright</span><span>Jest</span><span>Docker</span><span>GitHub Actions</span><span>Claude API</span>
-    </div>
+    <ul class="strip-list">
+      <li>TypeScript</li><li>React</li><li>Next.js</li><li>Node.js</li><li>Express</li><li>PostgreSQL</li><li>Python</li><li>Rust</li><li>Playwright</li><li>Jest</li><li>Docker</li><li>GitHub Actions</li><li>Claude API</li>
+    </ul>
+    <canvas class="strip-cv" aria-hidden="true"></canvas>
   </section>
 
-  <!-- WORK -->
-  <section id="work" class="wrap section">
-    <p class="kicker">// selected work</p>
-    <h2 class="big">WORK THAT<br><span>SHIPS.</span></h2>
+  <!-- WORK: phone-sized cards side by side; scrolling moves them and their ASCII evolves -->
+  <section id="work" class="work">
+    <div class="work-pin">
+      <div class="wrap work-head">
+        <p class="kicker">// selected work <span class="scroll-hint">/ scroll -&gt;</span></p>
+        <h2 class="big" data-ascii="9">WORK THAT <span>SHIPS.</span></h2>
+      </div>
+      <div class="work-track">
 
-    <div class="work-grid">
-
-      <article class="card wide reveal">
-        <a class="shot" href="https://github.com/lprvy/bugboard"><img src="img/bugboard-board.png" width="1280" height="800" alt="Bugboard: bug list with stats, filters and severity badges" loading="lazy"></a>
-        <div class="card-body">
-          <span class="n">01</span>
-          <div>
-            <h3>BUGBOARD</h3>
+        <article class="phone" data-kind="desk" data-title="BUG BOARD">
+          <div class="screen"><img src="img/bugboard-board.png" width="1280" height="800" alt="Bugboard: bug list with stats, filters and severity badges" loading="lazy"></div>
+          <div class="phone-body">
+            <p class="evo" aria-hidden="true"></p>
+            <h3><span class="n">01</span> BUGBOARD</h3>
             <p>Full-stack bug tracker with a tested REST API. Next.js, Express, PostgreSQL; Jest + Newman tests, Docker and CI.</p>
-            <p class="tags">Next.js · Express · PostgreSQL · Docker</p>
+            <p class="tags">next.js / express / postgresql / docker</p>
+            <a class="go" href="https://github.com/lprvy/bugboard">[ source -&gt; ]</a>
           </div>
-          <a class="arrow" href="https://github.com/lprvy/bugboard" aria-label="bugboard on GitHub">↗</a>
-        </div>
-      </article>
+        </article>
 
-      <article class="card reveal">
-        <a class="shot" href="https://lprvy.github.io/qa-playground/"><img src="img/qa-report.png" width="1280" height="860" alt="Playwright report: 67 tests passed" loading="lazy"></a>
-        <div class="card-body">
-          <span class="n">02</span>
-          <div>
-            <h3>QA PLAYGROUND</h3>
+        <article class="phone" data-kind="desk" data-title="QA PLAY GROUND">
+          <div class="screen"><img src="img/qa-report.png" width="1280" height="860" alt="Playwright report: 67 tests passed" loading="lazy"></div>
+          <div class="phone-body">
+            <p class="evo" aria-hidden="true"></p>
+            <h3><span class="n">02</span> QA PLAYGROUND</h3>
             <p>67 Playwright tests on 3 browsers, page objects, written bug reports, nightly CI and a <a href="https://lprvy.github.io/qa-playground/">live report</a>.</p>
-            <p class="tags">Playwright · TypeScript</p>
+            <p class="tags">playwright / typescript</p>
+            <a class="go" href="https://github.com/lprvy/qa-playground">[ source -&gt; ]</a>
           </div>
-          <a class="arrow" href="https://github.com/lprvy/qa-playground" aria-label="qa-playground on GitHub">↗</a>
-        </div>
-      </article>
+        </article>
 
-      <article class="card reveal">
-        <div class="shot term-shot">
-<pre><span class="g">$</span> logsleuth examples/app.log
-<span class="d">12 lines · 3 WARN · 4 ERROR · 1 FATAL</span>
+        <article class="phone" data-kind="term" data-title="LOG SLEUTH">
+          <div class="screen"><pre class="term">$ logsleuth app.log
+12 lines | 3 WARN
+4 ERROR | 1 FATAL
 
- 1. <span class="r">[FATAL]</span> x1  connection pool
-    exhausted (max &lt;n&gt;)
- 2. <span class="o">[ERROR]</span> x3  payment provider
-    timeout for order &lt;uuid&gt;
-    <span class="d">seen 09:01:15 → 09:05:00</span></pre>
-        </div>
-        <div class="card-body">
-          <span class="n">03</span>
-          <div>
-            <h3>LOGSLEUTH</h3>
+1. [FATAL] x1
+   connection pool
+   exhausted (max &lt;n&gt;)
+2. [ERROR] x3
+   payment provider
+   timeout &lt;uuid&gt;
+   09:01 to 09:05
+3. [WARN]  x3
+   slow query &lt;n&gt;ms</pre></div>
+          <div class="phone-body">
+            <p class="evo" aria-hidden="true"></p>
+            <h3><span class="n">03</span> LOGSLEUTH</h3>
             <p>Rust CLI that groups, counts and ranks the problems in your logs. CI gate, JSON output, binaries for 3 OSes.</p>
-            <p class="tags">Rust · CLI</p>
+            <p class="tags">rust / cli</p>
+            <a class="go" href="https://github.com/lprvy/logsleuth">[ source -&gt; ]</a>
           </div>
-          <a class="arrow" href="https://github.com/lprvy/logsleuth" aria-label="logsleuth on GitHub">↗</a>
-        </div>
-      </article>
+        </article>
 
-      <article class="card reveal">
-        <div class="shot term-shot">
-<pre><span class="d"># messy notes</span>
-checkout crashes when i apply coupon
-expected: 10% discount
-actual: white screen, TypeError
-<span class="r">──▶</span>
-<b>## Checkout crashes when i apply coupon</b>
-<span class="o">Severity:</span> 🟠 high · <span class="o">Component:</span> checkout
-### Steps · Expected · Actual · Env</pre>
-        </div>
-        <div class="card-body">
-          <span class="n">04</span>
-          <div>
-            <h3>AI BUG REPORTER</h3>
+        <article class="phone" data-kind="term" data-title="AI BUG REPORT">
+          <div class="screen"><pre class="term"># messy notes
+checkout crashes
+when i apply coupon
+expected: 10% off
+actual: white screen
+
+      |
+      v
+
+## Checkout crashes
+Severity: high
+Component: checkout
+### Steps
+### Expected
+### Actual</pre></div>
+          <div class="phone-body">
+            <p class="evo" aria-hidden="true"></p>
+            <h3><span class="n">04</span> AI BUG REPORTER</h3>
             <p>Messy notes in, reproducible bug report out. Offline rules or Claude with structured outputs, validated by Pydantic.</p>
-            <p class="tags">Python · Claude API · Pydantic</p>
+            <p class="tags">python / claude api / pydantic</p>
+            <a class="go" href="https://github.com/lprvy/ai-bug-reporter">[ source -&gt; ]</a>
           </div>
-          <a class="arrow" href="https://github.com/lprvy/ai-bug-reporter" aria-label="ai-bug-reporter on GitHub">↗</a>
-        </div>
-      </article>
+        </article>
 
-      <article class="card reveal">
-        <div class="shot phones">
-          <img src="img/expense-journal.png" width="780" height="1688" alt="Expense journal: daily entries" loading="lazy">
-          <img src="img/expense-summary.png" width="780" height="1688" alt="Expense journal: summary" loading="lazy">
-          <img src="img/expense-history.png" width="780" height="1688" alt="Expense journal: history" loading="lazy">
-        </div>
-        <div class="card-body">
-          <span class="n">05</span>
-          <div>
-            <h3>EXPENSE JOURNAL</h3>
+        <article class="phone" data-kind="phone">
+          <div class="screen"><img src="img/expense-journal.png" width="780" height="1688" alt="Expense journal: daily entries" loading="lazy"></div>
+          <div class="phone-body">
+            <p class="evo" aria-hidden="true"></p>
+            <h3><span class="n">05</span> EXPENSE JOURNAL</h3>
             <p>Notebook-style income &amp; expense tracker. Type a line, tag it, see the totals. Phone and web, TR/EN.</p>
-            <p class="tags">React Native · Expo</p>
+            <p class="tags">react native / expo</p>
+            <a class="go" href="https://github.com/lprvy/expense-journal">[ source -&gt; ]</a>
           </div>
-          <a class="arrow" href="https://github.com/lprvy/expense-journal" aria-label="expense-journal on GitHub">↗</a>
-        </div>
-      </article>
+        </article>
 
-      <article class="card wide reveal">
-        <div class="shot phones four">
-          <img src="img/fitness-workout.png" width="780" height="1688" alt="Fitness tracker: workout" loading="lazy">
-          <img src="img/fitness-nutrition.png" width="780" height="1688" alt="Fitness tracker: nutrition" loading="lazy">
-          <img src="img/fitness-summary.png" width="780" height="1688" alt="Fitness tracker: summary" loading="lazy">
-          <img src="img/fitness-grocery.png" width="780" height="1688" alt="Fitness tracker: grocery budget" loading="lazy">
-        </div>
-        <div class="card-body">
-          <span class="n">06</span>
-          <div>
-            <h3>FITNESS TRACKER</h3>
+        <article class="phone" data-kind="phone">
+          <div class="screen"><img src="img/fitness-workout.png" width="780" height="1688" alt="Fitness tracker: workout" loading="lazy"></div>
+          <div class="phone-body">
+            <p class="evo" aria-hidden="true"></p>
+            <h3><span class="n">06</span> FITNESS TRACKER</h3>
             <p>12-week training plan with rest timers, nutrition macros, grocery budget and pantry. TR/EN.</p>
-            <p class="tags">React Native · Zustand</p>
+            <p class="tags">react native / zustand</p>
+            <a class="go" href="https://github.com/lprvy/fitness-tracker">[ source -&gt; ]</a>
           </div>
-          <a class="arrow" href="https://github.com/lprvy/fitness-tracker" aria-label="fitness-tracker on GitHub">↗</a>
-        </div>
-      </article>
+        </article>
 
-      <article class="card wide slim reveal">
-        <div class="card-body">
-          <span class="n">07</span>
-          <div>
-            <h3>BROTATO CHEAT HELPER</h3>
+        <article class="phone" data-kind="potato" data-title="BRO TATO">
+          <div class="screen"><pre class="term">F1  +100 materials
+F2  +1 level
+F3  stats x2
+F4  heal
+--------------
+install.bat
+release.zip (CI)</pre></div>
+          <div class="phone-body">
+            <p class="evo" aria-hidden="true"></p>
+            <h3><span class="n">07</span> BROTATO CHEAT HELPER</h3>
             <p>Local mod for the game Brotato: hotkeys for materials, stats and levels, one-click Windows installer, release zips built by CI.</p>
-            <p class="tags">GDScript · Godot · Batch</p>
+            <p class="tags">gdscript / godot / batch</p>
+            <a class="go" href="https://github.com/lprvy/brotato-cheat-helper">[ source -&gt; ]</a>
           </div>
-          <a class="arrow" href="https://github.com/lprvy/brotato-cheat-helper" aria-label="brotato-cheat-helper on GitHub">↗</a>
-        </div>
-      </article>
+        </article>
+
+      </div>
+      <p class="wrap work-progress" aria-hidden="true"></p>
     </div>
   </section>
 
@@ -201,54 +195,53 @@ actual: white screen, TypeError
   <section id="numbers" class="wrap section numbers">
     <div class="num-left reveal">
       <p class="kicker">// by the numbers</p>
-      <h2 class="big">THE CODE.<br><span>THE TESTS.</span></h2>
-      <div class="counter"><span class="count" data-to="150">150</span><sup>+</sup></div>
+      <h2 class="big" data-ascii="9">THE CODE.<br><span>THE TESTS.</span></h2>
+      <p class="counter" data-ascii="11" data-count="150">150<span>+</span></p>
       <p class="muted">automated tests across my projects: UI, API, unit and end-to-end.</p>
     </div>
     <ol class="list reveal">
-      <li><div><b>Playwright suite</b><small>qa-playground · Chromium, Firefox, mobile</small></div><em>67</em></li>
-      <li><div><b>Bug report engine</b><small>ai-bug-reporter · pytest, no network</small></div><em>32</em></li>
-      <li><div><b>Training &amp; nutrition logic</b><small>fitness-tracker · Jest</small></div><em>22</em></li>
-      <li><div><b>Log grouping, unit + e2e</b><small>logsleuth · cargo test, 3 OSes</small></div><em>20</em></li>
-      <li><div><b>Amounts, tags, storage</b><small>expense-journal · Jest</small></div><em>18</em></li>
-      <li><div><b>Repos with CI</b><small>lint, tests or releases on every push</small></div><em>7/7</em></li>
+      <li><div><b>Playwright suite</b><small>qa-playground / chromium, firefox, mobile</small></div><i aria-hidden="true"></i><em>67</em></li>
+      <li><div><b>Bug report engine</b><small>ai-bug-reporter / pytest, no network</small></div><i aria-hidden="true"></i><em>32</em></li>
+      <li><div><b>Training &amp; nutrition logic</b><small>fitness-tracker / jest</small></div><i aria-hidden="true"></i><em>22</em></li>
+      <li><div><b>Log grouping, unit + e2e</b><small>logsleuth / cargo test, 3 OSes</small></div><i aria-hidden="true"></i><em>20</em></li>
+      <li><div><b>Amounts, tags, storage</b><small>expense-journal / jest</small></div><i aria-hidden="true"></i><em>18</em></li>
+      <li><div><b>Repos with CI</b><small>lint, tests or releases on every push</small></div><i aria-hidden="true"></i><em>7/7</em></li>
     </ol>
   </section>
 
   <!-- JOURNEY -->
   <section id="journey" class="wrap section">
     <p class="kicker">// the journey</p>
-    <h2 class="big">KEEP BUILDING.<br><span>KEEP BREAKING.</span></h2>
+    <h2 class="big" data-ascii="9">KEEP BUILDING.<br><span>KEEP BREAKING.</span></h2>
     <ol class="timeline">
       <li class="reveal"><time>2026</time><div><b>Open-source contributor</b><p>Turkish documentation for AI and developer-tool projects; several pull requests merged upstream.</p></div></li>
-      <li class="reveal"><time>2024 – now</time><div><b>Trakya University</b><p>Web/Multimedia Management and Webmaster. Full-stack, mobile and test automation projects on the side.</p></div></li>
-      <li class="reveal"><time>2021 – 2023</time><div><b>IT Support</b><p>Kept people and machines working: troubleshooting, setup and clear reports of what broke and why.</p></div></li>
+      <li class="reveal"><time>2024 - now</time><div><b>Trakya University</b><p>Web/Multimedia Management and Webmaster. Full-stack, mobile and test automation projects on the side.</p></div></li>
+      <li class="reveal"><time>2021 - 2023</time><div><b>IT Support</b><p>Kept people and machines working: troubleshooting, setup and clear reports of what broke and why.</p></div></li>
     </ol>
   </section>
 
   <!-- CONTACT -->
   <section id="contact" class="wrap section contact">
     <div class="reveal">
-      <h2 class="big huge">LET'S WORK<br><span>TOGETHER.</span></h2>
+      <h2 class="big" data-ascii="11">LET'S WORK<br><span>TOGETHER.</span></h2>
       <p class="muted">Open to remote work, internships and collaboration. Have a bug that nobody can reproduce? Even better.</p>
-      <a class="btn-red" href="https://github.com/lprvy">Say hi on GitHub →</a>
+      <a class="btn red" href="https://github.com/lprvy">say hi on github -&gt;</a>
     </div>
     <ul class="contact-list reveal">
-      <li><span class="ic">⌂</span><div><small>Based in</small><b>Türkiye 🇹🇷 · UTC+3</b></div></li>
-      <li><span class="ic">◎</span><div><small>Available for</small><b>Remote · full-time or freelance</b></div></li>
-      <li><span class="ic">↗</span><div><small>Code</small><b><a href="https://github.com/lprvy">github.com/lprvy</a></b></div></li>
+      <li><span class="ic">[~]</span><div><small>based in</small><b>Türkiye / UTC+3</b></div></li>
+      <li><span class="ic">[o]</span><div><small>available for</small><b>remote / full-time or freelance</b></div></li>
+      <li><span class="ic">[&gt;]</span><div><small>code</small><b><a href="https://github.com/lprvy">github.com/lprvy</a></b></div></li>
     </ul>
   </section>
 </main>
 
 <footer class="wrap foot">
   <span class="logo"><span class="tilde">~/</span>lprvy<span class="caret">_</span></span>
-  <span>© 2026 · hand-written HTML, CSS &amp; a little JS · <a href="https://github.com/lprvy/lprvy.github.io">source</a></span>
+  <span>(c) 2026 / hand-written HTML, CSS &amp; a little JS / <a href="https://github.com/lprvy/lprvy.github.io">source</a></span>
 </footer>
 
-<script src="ascii.js?v=20261120f"></script>
-<script src="main.js?v=20261120f"></script>
-<script src="ascii-fx.js?v=20261120f"></script>
-<script src="cursor-war.js?v=20261120f"></script>
+<script src="ascii.js?v=20261127a"></script>
+<script src="main.js?v=20261127a"></script>
+<script src="ascii-ui.js?v=20261127a"></script>
 </body>
 </html>

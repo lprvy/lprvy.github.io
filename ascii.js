@@ -3,7 +3,9 @@
    finger) drops "stones" into a 2D wave simulation; where the water moves, the
    characters are refracted, brightened and tinted red. Where the prism's
    light falls (main.js publishes it as window.__prismLight), the characters
-   take the colour of the beam. No dependencies. */
+   take the colour of the beam, and the glass itself is drawn with / \ _
+   characters (main.js no longer paints the prism, everything is ASCII).
+   No dependencies. */
 (function () {
   'use strict';
   var cv = document.querySelector('canvas.ascii-bg');
@@ -26,6 +28,8 @@
   var HUES = 12, LITLV = 3, WHITE = HUES;          // hue buckets 0..11 plus white
   var lc = document.createElement('canvas'), lx = lc.getContext('2d', { willReadFrequently: true });
   var lit, litBox = null, oldLitBox = null, litAtlas = document.createElement('canvas'), stepN = 0;
+  // the glass: edge glyphs (bright) and the inside of the prism (dim)
+  var EDGE = '/\\_|-*.', EDGE_B = 100, EDGE_D = 120, edgeAtlas = document.createElement('canvas');
 
   function noise(x, y) { // cheap smooth value noise from a few sines
     return (Math.sin(x * 0.11 + y * 0.07) + Math.sin(x * 0.05 - y * 0.13 + 1.7) + Math.sin((x + y) * 0.031 + 4.2)) / 6 + 0.5;
@@ -87,14 +91,54 @@
         for (var kk = 1; kk < RAMP.length; kk++) la.fillText(RAMP[kk], kk * TW / DPR, (hh * LITLV + lv) * TH / DPR);
       }
     }
+    edgeAtlas.width = TW * EDGE.length; edgeAtlas.height = TH * 2;
+    var ea = edgeAtlas.getContext('2d');
+    ea.fillStyle = BG; ea.fillRect(0, 0, edgeAtlas.width, edgeAtlas.height);
+    ea.setTransform(DPR, 0, 0, DPR, 0, 0);
+    ea.font = 'bold ' + FS + 'px ' + FONT; ea.textBaseline = 'top';
+    for (var e = 0; e < EDGE.length; e++) {
+      ea.fillStyle = 'rgba(244,244,248,.96)'; ea.fillText(EDGE[e], e * TW / DPR, 0);
+      ea.fillStyle = 'rgba(180,190,225,.32)'; ea.fillText(EDGE[e], e * TW / DPR, TH / DPR);
+    }
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.drawImage(base, 0, 0);
+  }
+
+  // the prism's outline and body, rasterised into the lit grid
+  function glass(L, mark) {
+    if (!L.tri) return;
+    var t = L.tri.map(function (p) { return { x: p.x, y: p.y + L.top }; }); // hero -> viewport
+    var minX = 1e9, maxX = -1e9, minY = 1e9, maxY = -1e9;
+    t.forEach(function (p) { minX = Math.min(minX, p.x); maxX = Math.max(maxX, p.x); minY = Math.min(minY, p.y); maxY = Math.max(maxY, p.y); });
+    function side(a, b, x, y) { return (b.x - a.x) * (y - a.y) - (b.y - a.y) * (x - a.x) > 0; }
+    var s0 = side(t[0], t[1], t[2].x, t[2].y);
+    for (var y = Math.max(1, Math.floor(minY / CH)); y <= Math.min(rows - 2, Math.ceil(maxY / CH)); y++) {
+      for (var x = Math.max(1, Math.floor(minX / CW)); x <= Math.min(cols - 2, Math.ceil(maxX / CW)); x++) {
+        var cx = (x + 0.5) * CW, cy = (y + 0.5) * CH;
+        if (side(t[0], t[1], cx, cy) === s0 && side(t[1], t[2], cx, cy) === s0 && side(t[2], t[0], cx, cy) === s0 && lit[y * cols + x] < 0)
+          mark(x, y, EDGE_D + 6); // a quiet dotted body where no colour falls
+      }
+    }
+    for (var e = 0; e < 3; e++) {
+      var a = t[e], b = t[(e + 1) % 3], dx = b.x - a.x, dy = b.y - a.y;
+      // glyph that follows the edge: / \ _ |
+      var g = Math.abs(dy) < Math.abs(dx) * 0.4 ? 2 : Math.abs(dx) < Math.abs(dy) * 0.3 ? 3 : (dx * dy > 0 ? 1 : 0);
+      var n = Math.ceil(Math.hypot(dx, dy) / (Math.min(CW, CH) * 0.5));
+      for (var s = 0; s <= n; s++) {
+        var px = Math.floor((a.x + dx * s / n) / CW), py = Math.floor((a.y + dy * s / n) / CH);
+        if (px > 0 && py > 0 && px < cols - 1 && py < rows - 1) mark(px, py, EDGE_B + g);
+      }
+    }
+    if (L.entry) { // where the light enters, a bright spark
+      var ex = Math.floor(L.entry.x / CW), ey = Math.floor((L.entry.y + L.top) / CH);
+      if (ex > 0 && ey > 0 && ex < cols - 1 && ey < rows - 1) mark(ex, ey, EDGE_B + 5);
+    }
   }
 
   function updateLight() {
     var L = window.__prismLight;
     oldLitBox = litBox; litBox = null;
-    if (!L || !L.polys.length) { if (oldLitBox) lit.fill(-1); return; }
+    if (!L || (!L.polys.length && !L.tri)) { if (oldLitBox) lit.fill(-1); return; }
     lx.setTransform(1, 0, 0, 1, 0, 0);
     lx.clearRect(0, 0, cols, rows);
     // hero coordinates -> cell coordinates
@@ -118,6 +162,10 @@
         if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y;
       }
     }
+    glass(L, function (x, y, v) {
+      lit[y * cols + x] = v;
+      if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y;
+    });
     if (x1 >= 0) litBox = { x0: Math.max(1, x0), x1: Math.min(cols - 2, x1), y0: Math.max(1, y0), y1: Math.min(rows - 2, y1) };
     if (oldLitBox && !litBox) lit.fill(-1);
   }
@@ -181,7 +229,9 @@
           var sx = Math.max(0, Math.min(cols - 1, x + ox)), sy = Math.max(0, Math.min(rows - 1, y + oy));
           ci = chars[sy * cols + sx];
         } else ci = chars[i];
-        if (L >= 0) {
+        if (L >= EDGE_B) {
+          code = 5000 + L;
+        } else if (L >= 0) {
           // in the light: the beam's colour, denser characters where it is brighter
           ci = Math.min(n - 1, (L >= WHITE * LITLV ? ci + 1 : Math.max(ci, 4) + 2 + (L % LITLV) * 2) + Math.round(t * 3)); // the white beam stays quiet behind the text
           code = 1000 + L * n + ci;
@@ -194,6 +244,7 @@
         shown[i] = code;
         var px = Math.round(x * CW * DPR);
         if (code < 0) ctx.drawImage(base, px, py, TW, TH, px, py, TW, TH);
+        else if (code >= 5000) ctx.drawImage(edgeAtlas, ((L - EDGE_B) % 20) * TW, (L >= EDGE_D ? 1 : 0) * TH, TW, TH, px, py, TW, TH);
         else if (code >= 1000) ctx.drawImage(litAtlas, ci * TW, L * TH, TW, TH, px, py, TW, TH);
         else ctx.drawImage(atlas, ci * TW, lv * TH, TW, TH, px, py, TW, TH);
       }
@@ -229,8 +280,18 @@
   var rt;
   function start() {
     build();
-    if (reduced) return; // static texture only
-    // other scripts (the cursor war) can drop a ripple too
+    if (reduced) { // static texture plus the resting prism
+      var still = function () {
+        var L = window.__prismLight, hero = document.querySelector('.hero');
+        if (L && hero) L.top = hero.getBoundingClientRect().top; // the light scrolls away with the hero
+        updateLight(); render();
+      };
+      setTimeout(still, 400);
+      var sq = false;
+      window.addEventListener('scroll', function () { if (!sq) { sq = true; requestAnimationFrame(function () { sq = false; still(); }); } }, { passive: true });
+      return;
+    }
+    // other scripts can drop a ripple too
     window.__asciiDrop = function (x, y, p) { if (cur) drop(x, y, p); };
     window.addEventListener('pointermove', onMove, { passive: true });
     window.addEventListener('pointerdown', function (e) { drop(e.clientX, e.clientY, 420); lastInput = performance.now(); }, { passive: true });
