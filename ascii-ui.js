@@ -19,7 +19,7 @@
   function esc(c) { return c === '<' ? '&lt;' : c === '>' ? '&gt;' : c === '&' ? '&amp;' : c; }
 
   /* =============== 1. ASCII headings =============== */
-  var HEAD_RAMP = ' .:+#@';
+  var HEAD_FILL = '@';
   var SW = 6, SH = 10; // sampling pixels per character cell (monospace cell is 0.6 x 1)
   var heads = [];
 
@@ -45,13 +45,14 @@
       var text = segs.map(function (s) { return s.t; }).join('');
       x.font = '100px ' + DISPLAY;
       var m = x.measureText(text), GAP = 14; // extra space between letters (at 100px), so they stay apart in ASCII
-      var asc = m.actualBoundingBoxAscent || 72, desc = m.actualBoundingBoxDescent || 0;
-      var k = rows * SH * 0.92 / (asc + desc);
+      // size by the flat cap height (H): round letters overshoot it and left stray dots above/below
+      var asc = x.measureText('H').actualBoundingBoxAscent || 72;
+      var k = rows * SH / asc;
       var cols = Math.ceil((m.width + GAP * text.length) * k / SW) + 1;
       c.width = cols * SW; c.height = rows * SH;
       x.font = (100 * k).toFixed(2) + 'px ' + DISPLAY;
       x.textBaseline = 'alphabetic'; x.fillStyle = '#fff';
-      var px = 0, red = [], y = rows * SH * 0.04 + asc * k;
+      var px = 0, red = [], y = asc * k;
       segs.forEach(function (s) {
         var x0 = px;
         for (var ci = 0; ci < s.t.length; ci++) {
@@ -68,7 +69,8 @@
           for (var yy = 0; yy < SH; yy++) for (var xx = 0; xx < SW; xx++) sum += d[(((r * SH + yy) * c.width) + q * SW + xx) * 4 + 3];
           var v = sum / (SW * SH * 255), cx = (q + 0.5) * SW;
           var isRed = red.some(function (rg) { return cx >= rg[0] - SW && cx <= rg[1]; });
-          row.push({ ch: HEAD_RAMP[Math.round(Math.pow(v, 0.9) * (HEAD_RAMP.length - 1))], red: isRed });
+          // solid cells only: soft edge glyphs (. : +) made letters look dirty
+          row.push({ ch: v < 0.42 ? ' ' : HEAD_FILL, red: isRed });
         }
         grid.push(row);
       }
@@ -366,6 +368,32 @@
     return c;
   }
 
+  /* 5x7 pixel letters for the small card titles: a squeezed display font turns to mush at that size */
+  var PIX = {
+    A: '01110100011000111111100011000110001', B: '11110100011000111110100011000111110',
+    C: '01110100011000010000100001000101110', D: '11110100011000110001100011000111110',
+    E: '11111100001000011110100001000011111', F: '11111100001000011110100001000010000',
+    G: '01110100011000010111100011000101111', H: '10001100011000111111100011000110001',
+    I: '01110001000010000100001000010001110', J: '00111000100001000010000101001001100',
+    K: '10001100101010011000101001001010001', L: '10000100001000010000100001000011111',
+    M: '10001110111010110101100011000110001', N: '10001100011100110101100111000110001',
+    O: '01110100011000110001100011000101110', P: '11110100011000111110100001000010000',
+    Q: '01110100011000110001101011001001101', R: '11110100011000111110101001001010001',
+    S: '01111100001000001110000010000111110', T: '11111001000010000100001000010000100',
+    U: '10001100011000110001100011000101110', V: '10001100011000110001100010101000100',
+    W: '10001100011000110101101011010101010', X: '10001100010101000100010101000110001',
+    Y: '10001100010101000100001000010000100', Z: '11111000010001000100010001000011111',
+    ' ': '00000000000000000000000000000000000'
+  };
+  function pixLines(word) { // -> array of 7 strings of '@' and ' '
+    var rows = ['', '', '', '', '', '', ''];
+    word.toUpperCase().split('').forEach(function (chr, i) {
+      var g = PIX[chr] || PIX[' '];
+      for (var r = 0; r < 7; r++) rows[r] += (i ? ' ' : '') + g.substr(r * 5, 5).replace(/1/g, '@').replace(/0/g, ' ');
+    });
+    return rows;
+  }
+
   function renderStage(card, s) {
     var st = STAGES[s], w = card.w, h = card.h;
     var cw = st.fs * 0.6, ch = st.fs, cols = Math.ceil(w / cw), rows = Math.ceil(h / ch);
@@ -411,17 +439,17 @@
       o.fillStyle = '#0d0d0e'; o.fillRect(0, tb.y - 6, w, h - tb.y + 6);
       termLines(o, tb.lines, w, tb.y, tb.h);
     }
-    // ...and the title becomes clean ASCII letters, like the page headings
-    if (s === LAST && card.titleBox) {
+    // the title is always drawn as clean ASCII letters, like the page headings
+    if (card.titleBox) {
       var ti = card.titleBox, lh = ti.h / ti.words.length;
       o.fillStyle = '#0d0d0e'; o.fillRect(0, 0, w, ti.y + ti.h + 2);
       o.textBaseline = 'top';
       ti.words.forEach(function (word, wi) {
-        var R = 9, a = artLines([[{ t: word, red: false }]], R);
-        var fz = Math.min(w * 0.86 / (a.cols * 0.6), lh / (R + 0.5));
+        var a = pixLines(word), cols = a[0].length;
+        var fz = Math.min(w * 0.86 / (cols * 0.6), lh / 8);
         o.font = 'bold ' + fz.toFixed(2) + 'px ' + MONO; o.fillStyle = '#f2f2f0';
-        a.grid.forEach(function (row, ry) {
-          row.forEach(function (c, cx) { if (c.ch !== ' ') o.fillText(c.ch, w * 0.07 + cx * fz * 0.6, ti.y + wi * lh + ry * fz); });
+        a.forEach(function (row, ry) {
+          for (var cx = 0; cx < cols; cx++) if (row[cx] !== ' ') o.fillText(row[cx], w * 0.07 + cx * fz * 0.6, ti.y + wi * lh + ry * fz);
         });
       });
     }

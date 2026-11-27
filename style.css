@@ -104,14 +104,14 @@ a:hover { text-decoration: underline; }
 /* ---------- sections ---------- */
 .section { padding-top: 110px; padding-bottom: 20px; position: relative; z-index: 3; }
 .kicker { font-size: .8rem; color: var(--red-2); letter-spacing: .08em; margin: 0 0 12px; }
-.big { --afs: 10px; margin: 0 0 40px; font-family: var(--mono); font-weight: 700; font-size: 2.4rem; line-height: 1.05; }
+.big { --afs: 7.5px; margin: 0 0 40px; font-family: var(--mono); font-weight: 700; font-size: 2.4rem; line-height: 1.05; }
 .big span { color: var(--red); }
 
 /* ---------- work: horizontal phones ---------- */
 .work { position: relative; z-index: 3; padding-top: 90px; }
 .work-pin { display: flex; flex-direction: column; gap: 18px; }
 .work-head { width: 100%; }
-.work-head .big { --afs: 7px; margin: 0; }
+.work-head .big { --afs: 5.5px; margin: 0; }
 .scroll-hint { color: var(--dim); }
 .work-track { display: flex; gap: 28px; padding: 6px max(16px, calc((100vw - 1200px) / 2 + 16px)) 18px; overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: thin; scrollbar-color: var(--line) transparent; }
 .phone { --ph: min(600px, calc(100svh - 230px)); position: relative; flex: none; height: max(480px, var(--ph)); aspect-ratio: 1 / 2; max-width: 84vw; display: flex; flex-direction: column; scroll-snap-align: center; padding: 1.4em 1.3em 1.6em; color: var(--text); }
@@ -198,7 +198,7 @@ a:hover { text-decoration: underline; }
   .hero-text { max-width: none; }
   .hero-foot { margin-top: 44vh; }
   .numbers { gap: 28px; }
-  .big { --afs: 8px; }
+  .big { --afs: 6px; }
 }
 @media (max-width: 520px) {
   .work-track { gap: 18px; }
